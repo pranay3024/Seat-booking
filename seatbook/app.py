@@ -120,7 +120,7 @@ def get_booking_or_404(code):
 
 def booked_map(show_id):
     rows = db.query(
-        """SELECT bs.seat, b.code, b.customer_name
+        """SELECT bs.seat, b.code, b.customer_name, b.phone
            FROM booked_seats bs JOIN bookings b ON b.id = bs.booking_id
            WHERE bs.show_id = ?""",
         (show_id,),
