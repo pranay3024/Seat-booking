@@ -50,8 +50,13 @@ pip install -r requirements.txt
 python app.py
 ```
 
+To use Supabase locally, put `DATABASE_URL` in the repository-root `.env` file
+(next to the `seatbook` folder). The app loads it automatically; keep `.env`
+private and URL-encode special characters in the database password (for example,
+write `@` as `%40`). Leave `DATABASE_URL` unset to use local SQLite.
+
 Open http://127.0.0.1:5000 and log in with **admin / admin123** (local default only).
-Locally the data is saved in a file called `seatdesk.db` — no database setup needed.
+Without `DATABASE_URL`, local data is saved in `seatdesk.db`.
 
 > On Windows, if `psycopg2-binary` fails to install locally, run `pip install Flask` instead — you only need Postgres on Vercel.
 
@@ -106,7 +111,12 @@ Keep the connection string private. Do not put it in source code or commit it to
 
 The project URL for this app is `https://hezbwvzsbbdquxfvzfug.supabase.co`; it identifies the project but is not used as `DATABASE_URL`. The yellow warning banner disappears once the database connection is configured.
 
-For local development with Supabase, set `DATABASE_URL` in the shell before starting the app. Leave it empty to continue using the local SQLite database.
+For local development, the app reads `DATABASE_URL` from the repository-root `.env`. Leave it unset to continue using the local SQLite database.
+
+The database schema also creates an `admins` table with a `password_hash` column.
+It is not populated automatically; the current login still uses
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` from the environment, and those values
+should never be stored as plaintext in the database.
 
 ## Step 5 — Making changes later
 

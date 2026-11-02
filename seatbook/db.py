@@ -61,6 +61,11 @@ SCHEMA = [
         created_at TEXT NOT NULL,
         cancelled_at TEXT
     )""",
+    """CREATE TABLE IF NOT EXISTS admins (
+        username TEXT PRIMARY KEY,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )""",
     """CREATE TABLE IF NOT EXISTS booked_seats (
         show_id INTEGER NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
         seat TEXT NOT NULL,
@@ -84,7 +89,8 @@ def _ensure_schema(conn):
             cur.execute(stmt)
         conn.commit()
     except Exception:
-        conn.rollback()  # another instance may have created it at the same moment
+        conn.rollback()
+        raise
     finally:
         cur.close()
     _schema_ready = True

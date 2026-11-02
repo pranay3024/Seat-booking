@@ -10,10 +10,14 @@ import re
 import secrets
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
+from pathlib import Path
 
 from flask import (
     Flask, Response, abort, flash, redirect, render_template, request, session, url_for,
 )
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import db
 from seats import (
