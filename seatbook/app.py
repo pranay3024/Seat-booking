@@ -44,7 +44,6 @@ ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "" if db.ON_VERCEL else "admin123")
 
 APP_NAME = os.environ.get("APP_NAME", "SeatDesk")
-SINGLE_SHOW_NAME = "Singing Show"
 MIN_SEATS, MAX_SEATS = 1, 50
 IST = timezone(timedelta(hours=5, minutes=30))
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -80,35 +79,10 @@ def parse_seats(raw):
     return out
 
 
-def get_single_show():
-    configured_id = os.environ.get("SINGLE_SHOW_ID", "").strip()
-    if configured_id:
-        if not configured_id.isdigit():
-            abort(500, "SINGLE_SHOW_ID must be the numeric ID of an existing show.")
-        show = db.query("SELECT * FROM shows WHERE id = ?", (int(configured_id),), one=True)
-        if not show:
-            abort(500, "SINGLE_SHOW_ID does not match an existing show.")
-    else:
-        shows = db.query("SELECT * FROM shows ORDER BY id LIMIT 2")
-        if len(shows) > 1:
-            abort(
-                409,
-                "More than one show exists. Set SINGLE_SHOW_ID to the show whose bookings and seats should be used.",
-            )
-        show = shows[0] if shows else None
-
-    if show is None:
-        row = db.execute(
-            """INSERT INTO shows (title, venue, show_date, show_time, notes, created_at)
-               VALUES (?, '', ?, '', '', ?) RETURNING id""",
-            (SINGLE_SHOW_NAME, date.today().isoformat(), now_utc()),
-        )
-        db.commit()
-        show = db.query("SELECT * FROM shows WHERE id = ?", (row["id"],), one=True)
-    elif show["title"] != SINGLE_SHOW_NAME:
-        db.execute("UPDATE shows SET title = ? WHERE id = ?", (SINGLE_SHOW_NAME, show["id"]))
-        db.commit()
-        show["title"] = SINGLE_SHOW_NAME
+def get_show_or_404(show_id):
+    show = db.query("SELECT * FROM shows WHERE id = ?", (show_id,), one=True)
+    if not show:
+        abort(404)
     return show
 
 
@@ -240,7 +214,94 @@ def logout():
 @app.route("/")
 @login_required
 def dashboard():
-    return _render_map(get_single_show())
+    shows = db.query(
+        """SELECT s.*, COALESCE(b.cnt, 0) AS bookings, COALESCE(b.seats, 0) AS seats_sold
+           FROM shows s
+           LEFT JOIN (SELECT show_id, COUNT(*) AS cnt, SUM(num_seats) AS seats
+                      FROM bookings WHERE status = 'confirmed' GROUP BY show_id) b
+             ON b.show_id = s.id
+           ORDER BY s.show_date DESC, s.show_time DESC"""
+    )
+    today = date.today().isoformat()
+    upcoming = [s for s in shows if s["show_date"] >= today]
+    past = [s for s in shows if s["show_date"] < today]
+    upcoming.sort(key=lambda s: (s["show_date"], s["show_time"] or ""))
+    totals = {
+        "shows": len(shows),
+        "bookings": sum(int(s["bookings"]) for s in shows),
+        "seats": sum(int(s["seats_sold"]) for s in shows),
+    }
+    recent = db.query(
+        """SELECT b.code, b.customer_name, b.num_seats, b.status, b.created_at,
+                  s.title AS show_title
+           FROM bookings b JOIN shows s ON s.id = b.show_id
+           ORDER BY b.created_at DESC LIMIT 8"""
+    )
+    return render_template(
+        "dashboard.html", upcoming=upcoming, past=past, totals=totals, recent=recent
+    )
+
+
+def _show_from_form(form):
+    data = {
+        "title": form.get("title", "").strip(),
+        "venue": form.get("venue", "").strip(),
+        "show_date": form.get("show_date", "").strip(),
+        "show_time": form.get("show_time", "").strip(),
+        "notes": form.get("notes", "").strip(),
+    }
+    errors = []
+    if not data["title"]:
+        errors.append("Show name is required.")
+    try:
+        datetime.strptime(data["show_date"], "%Y-%m-%d")
+    except ValueError:
+        errors.append("Pick a valid date.")
+    if data["show_time"] and not re.fullmatch(r"\d{2}:\d{2}", data["show_time"]):
+        errors.append("Pick a valid time.")
+    return data, errors
+
+
+@app.route("/shows/new", methods=["GET", "POST"])
+@login_required
+def show_new():
+    data = {}
+    if request.method == "POST":
+        data, errors = _show_from_form(request.form)
+        if not errors:
+            row = db.execute(
+                """INSERT INTO shows (title, venue, show_date, show_time, notes, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?) RETURNING id""",
+                (data["title"], data["venue"], data["show_date"], data["show_time"],
+                 data["notes"], now_utc()),
+            )
+            db.commit()
+            flash("Show created. Select it to start booking seats.", "ok")
+            return redirect(url_for("seat_map", show_id=row["id"]))
+        for error in errors:
+            flash(error, "error")
+    return render_template("show_form.html", show=data, editing=False)
+
+
+@app.route("/shows/<int:show_id>/edit", methods=["GET", "POST"])
+@login_required
+def show_edit(show_id):
+    show = get_show_or_404(show_id)
+    if request.method == "POST":
+        data, errors = _show_from_form(request.form)
+        if not errors:
+            db.execute(
+                """UPDATE shows SET title=?, venue=?, show_date=?, show_time=?, notes=? WHERE id=?""",
+                (data["title"], data["venue"], data["show_date"], data["show_time"],
+                 data["notes"], show_id),
+            )
+            db.commit()
+            flash("Show updated.", "ok")
+            return redirect(url_for("seat_map", show_id=show_id))
+        for error in errors:
+            flash(error, "error")
+        show = {**show, **data}
+    return render_template("show_form.html", show=show, editing=True)
 
 
 # ---------------------------------------------------------------- seat map + booking
@@ -266,18 +327,13 @@ def _render_map(show, form=None, preselect=None, status=200):
 @app.route("/shows/<int:show_id>")
 @login_required
 def seat_map(show_id):
-    show = get_single_show()
-    if show["id"] != show_id:
-        abort(404)
-    return redirect(url_for("dashboard"))
+    return _render_map(get_show_or_404(show_id))
 
 
 @app.route("/shows/<int:show_id>/book", methods=["POST"])
 @login_required
 def book(show_id):
-    show = get_single_show()
-    if show["id"] != show_id:
-        abort(404)
+    show = get_show_or_404(show_id)
     f = request.form
     seats = parse_seats(f.get("seats"))
     name = f.get("customer_name", "").strip()
@@ -331,16 +387,18 @@ def book(show_id):
 
 # ---------------------------------------------------------------- bookings
 def _filtered_bookings(args):
-    show = get_single_show()
     sql = """SELECT b.*, s.title AS show_title, s.show_date, s.show_time
-             FROM bookings b JOIN shows s ON s.id = b.show_id WHERE b.show_id = ?"""
-    params = [show["id"]]
+             FROM bookings b JOIN shows s ON s.id = b.show_id WHERE 1=1"""
+    params = []
     q = args.get("q", "").strip()
     if q:
         like = f"%{q.lower()}%"
         sql += """ AND (LOWER(b.customer_name) LIKE ? OR LOWER(b.phone) LIKE ?
                    OR LOWER(b.code) LIKE ? OR LOWER(COALESCE(b.email, '')) LIKE ?)"""
         params += [like] * 4
+    if args.get("show", "").isdigit():
+        sql += " AND b.show_id = ?"
+        params.append(int(args["show"]))
     if args.get("status") in ("confirmed", "cancelled"):
         sql += " AND b.status = ?"
         params.append(args["status"])
@@ -352,7 +410,8 @@ def _filtered_bookings(args):
 @login_required
 def bookings():
     rows = _filtered_bookings(request.args)
-    return render_template("bookings.html", rows=rows, args=request.args)
+    shows = db.query("SELECT id, title, show_date FROM shows ORDER BY show_date DESC")
+    return render_template("bookings.html", rows=rows, shows=shows, args=request.args)
 
 
 @app.route("/bookings.csv")
@@ -361,10 +420,10 @@ def bookings_csv():
     rows = _filtered_bookings(request.args)
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["Booking code", "Status", "Show", "Customer", "Phone", "Email", "City", "Seats",
-                "No. of seats", "Notes", "Booked at (IST)"])
+    w.writerow(["Booking code", "Status", "Show", "Show date", "Show time", "Customer", "Phone", "Email",
+                "City", "Seats", "No. of seats", "Notes", "Booked at (IST)"])
     for r in rows:
-        w.writerow([r["code"], r["status"], r["show_title"], r["customer_name"],
+        w.writerow([r["code"], r["status"], r["show_title"], r["show_date"], r["show_time"], r["customer_name"],
                     r["phone"], r["email"], r["city"], r["seats"].replace(",", " "), r["num_seats"],
                     r["notes"], ist(r["created_at"])])
     return Response(
@@ -421,11 +480,6 @@ def not_found(e):
 @app.errorhandler(400)
 def bad_request(e):
     return render_template("error.html", title="Something's off", message=e.description), 400
-
-
-@app.errorhandler(409)
-def conflict(e):
-    return render_template("error.html", title="Show setup needed", message=e.description), 409
 
 
 if __name__ == "__main__":

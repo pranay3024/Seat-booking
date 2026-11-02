@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit show' if editing else 'New show' }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <a class="back" href="{{ url_for('seat_map', show_id=show.id) if editing else url_for('dashboard') }}">← Back</a>
+  <h1>{{ 'Edit show' if editing else 'Create a show' }}</h1>
+  <p class="muted">After saving, the show's floor plan opens so you can select seats and enter customer details.</p>
+  <form class="card form-card" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field"><span>Show name *</span>
+      <input name="title" value="{{ show.title or '' }}" required autofocus placeholder="e.g. Singing Show"></label>
+    <label class="field"><span>Venue</span>
+      <input name="venue" value="{{ show.venue or '' }}" placeholder="e.g. Main Auditorium"></label>
+    <div class="row2">
+      <label class="field"><span>Date *</span>
+        <input type="date" name="show_date" value="{{ show.show_date or '' }}" required></label>
+      <label class="field"><span>Time</span>
+        <input type="time" name="show_time" value="{{ show.show_time or '' }}"></label>
+    </div>
+    <label class="field"><span>Notes</span>
+      <textarea name="notes" rows="3">{{ show.notes or '' }}</textarea></label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{{ 'Save changes' if editing else 'Create show and open seat map' }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
