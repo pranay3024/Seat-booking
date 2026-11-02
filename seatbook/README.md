@@ -1,17 +1,17 @@
-# SeatDesk — admin seat booking (Flask)
+# SeatDesk — Singing Show seat booking (Flask)
 
-An admin-only booking system for auditorium shows (BookMyShow-style seat maps).
+An admin-only booking system for a single show (BookMyShow-style seat map).
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
 - Admin login (single admin account set by environment variables)
-- After login, select a show to open its seat map
+- After login, the **Singing Show** seat map opens directly
 - Interactive seat map: click seats, **Shift+click** to select a run of seats in a row, zoom / fit
 - Book **1–50 seats** per booking with customer details (name, phone, email, city, notes) — no prices or payments
 - Double-booking is impossible (database-level lock on each seat)
 - Click any grey (booked) seat to open that booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
-- Bookings list with search, filter by show/status, **CSV export** (opens in Excel)
+- Bookings list with search, filter by status, **CSV export** (opens in Excel)
 - Works on phone and desktop
 
 ---
@@ -116,6 +116,11 @@ The database schema also creates an `admins` table with a `password_hash` column
 It is not populated automatically; the current login still uses
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` from the environment, and those values
 should never be stored as plaintext in the database.
+
+This project uses one fixed show, **Singing Show**. The first run creates it
+if it does not exist. Show creation and selection are not available in the app.
+To start with an empty seat map, remove the old shows and bookings from the
+database, keeping only the intended Singing Show record.
 
 ## Step 5 — Making changes later
 

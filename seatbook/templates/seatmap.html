@@ -4,15 +4,13 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <a class="back" href="{{ url_for('dashboard') }}">← Choose another show</a>
     <h1>{{ show.title }}</h1>
     <p class="muted">
       {{ show.show_date|nicedate }}{% if show.show_time %} · {{ show.show_time|nicetime }}{% endif %}{% if show.venue %} · {{ show.venue }}{% endif %}
     </p>
   </div>
   <div class="head-actions">
-    <a class="btn btn-ghost" href="{{ url_for('bookings', show=show.id) }}">Bookings for this show</a>
-    <a class="btn btn-ghost" href="{{ url_for('show_edit', show_id=show.id) }}">Edit show</a>
+    <a class="btn btn-ghost" href="{{ url_for('bookings') }}">Bookings</a>
   </div>
 </div>
 

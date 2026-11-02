@@ -12,10 +12,6 @@
 
 <form class="filters card" method="get">
   <input name="q" value="{{ args.get('q', '') }}" placeholder="Search name, phone, email or booking code" aria-label="Search">
-  <select name="show" aria-label="Show">
-    <option value="">All shows</option>
-    {% for s in shows %}<option value="{{ s.id }}" {{ 'selected' if args.get('show') == s.id|string }}>{{ s.title }} — {{ s.show_date|nicedate }}</option>{% endfor %}
-  </select>
   <select name="status" aria-label="Status">
     <option value="">Any status</option>
     <option value="confirmed" {{ 'selected' if args.get('status') == 'confirmed' }}>Confirmed</option>
@@ -29,14 +25,13 @@
 <div class="card table-card">
   <table class="table">
     <thead>
-      <tr><th>Code</th><th>Customer</th><th>Show</th><th>Seats</th><th>Status</th><th>Booked</th></tr>
+      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Booked</th></tr>
     </thead>
     <tbody>
       {% for r in rows %}
       <tr onclick="location.href='{{ url_for('booking_detail', code=r.code) }}'" class="{{ 'row-off' if r.status == 'cancelled' }}">
         <td class="mono"><a href="{{ url_for('booking_detail', code=r.code) }}">{{ r.code }}</a></td>
         <td><b>{{ r.customer_name }}</b><br><span class="muted small">{{ r.phone }}</span></td>
-        <td>{{ r.show_title }}<br><span class="muted small">{{ r.show_date|nicedate }}</span></td>
         <td><span class="pill">{{ r.num_seats }}</span> <span class="small seats-short">{{ r.seats.replace(',', ', ')|truncate(60) }}</span></td>
         <td><span class="status status-{{ r.status }}">{{ r.status|capitalize }}</span></td>
         <td class="small muted">{{ r.created_at|ist }}</td>
@@ -48,8 +43,8 @@
 {% else %}
 <div class="empty card">
   <h2>No bookings found</h2>
-  <p class="muted">Choose a show, select seats on its map, and enter customer details to make a booking.</p>
-  <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Choose a show</a>
+  <p class="muted">Select seats on the floor plan and enter customer details to make a booking.</p>
+  <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to seat map</a>
 </div>
 {% endif %}
 {% endblock %}
