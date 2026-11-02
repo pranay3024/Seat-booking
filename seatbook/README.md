@@ -11,7 +11,7 @@ The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Bal
 - Click selected seats to remove them, then click other available seats to choose replacements
 - Book with customer details (name, phone, email, city, notes) — no prices or payments
 - Double-booking is impossible (database-level lock on each seat)
-- Click any grey (booked) seat to open that booking
+- Hover over any grey (booked) seat to see its seat number and customer's name; click it to open that booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
 - Bookings list with search, filter by status, **CSV export** (opens in Excel)
 - Works on phone and desktop

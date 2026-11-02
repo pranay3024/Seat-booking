@@ -53,7 +53,7 @@
                   {%- for n in block -%}
                     {%- set lab = r.row ~ n -%}
                     {%- if lab in booked -%}
-                      <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ lab }} · {{ booked[lab].customer_name }} · {{ booked[lab].code }}">{{ n }}</a>
+                      <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="Seat {{ lab }} · {{ booked[lab].customer_name }}" aria-label="Seat {{ lab }}, booked by {{ booked[lab].customer_name }}">{{ n }}</a>
                     {%- else -%}
                       <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" data-block="{{ block_index }}" title="{{ lab }}">{{ n }}</button>
                     {%- endif -%}
