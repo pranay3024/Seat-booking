@@ -12,6 +12,9 @@
 </div>
 <form class="card login-card" method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="login-logo">
+    <img src="{{ url_for('static', filename='swaramancha-logo.png') }}" alt="Swaramancha">
+  </div>
   <h1>{{ APP_NAME }}</h1>
   <p class="muted">Admin sign in</p>
   {% if error %}<div class="alert">{{ error }}</div>{% endif %}
