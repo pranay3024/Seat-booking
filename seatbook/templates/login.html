@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body_class %}login-body{% endblock %}
+{% block main_class %}login-wrap{% endblock %}
+{% block content %}
+<div class="login-art" aria-hidden="true">
+  <div class="mini-stage">STAGE</div>
+  {% for w in [7, 9, 11, 13, 15, 17, 19] %}
+  <div class="mini-row">{% for i in range(w) %}<i class="{{ 'lit' if (i * 7 + loop.index * 3) % 5 == 0 }}"></i>{% endfor %}</div>
+  {% endfor %}
+  <p class="login-tag">Book seats for your guests in a few clicks.</p>
+</div>
+<form class="card login-card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h1>{{ APP_NAME }}</h1>
+  <p class="muted">Admin sign in</p>
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  <label class="field">
+    <span>Username</span>
+    <input name="username" autocomplete="username" required autofocus>
+  </label>
+  <label class="field">
+    <span>Password</span>
+    <input name="password" type="password" autocomplete="current-password" required>
+  </label>
+  <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+</form>
+{% endblock %}

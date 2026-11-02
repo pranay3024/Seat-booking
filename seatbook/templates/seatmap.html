@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ show.title }}{% endblock %}
+{% block main_class %}page page-wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{{ url_for('dashboard') }}">← All shows</a>
+    <h1>{{ show.title }}</h1>
+    <p class="muted">
+      {{ show.show_date|nicedate }}{% if show.show_time %} · {{ show.show_time|nicetime }}{% endif %}{% if show.venue %} · {{ show.venue }}{% endif %}
+    </p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{{ url_for('bookings', show=show.id) }}">Bookings for this show</a>
+    <a class="btn btn-ghost" href="{{ url_for('show_edit', show_id=show.id) }}">Edit show</a>
+  </div>
+</div>
+
+<div class="map-stats">
+  <div><span>Available</span><b>{{ TOTAL_SEATS - sold }}</b></div>
+  <div><span>Booked</span><b>{{ sold }}</b></div>
+  <div><span>Stalls (A–R)</span><b>{{ section_counts.stalls - sold_by_section.stalls }} <small>left</small></b></div>
+  <div><span>Balcony (S–W)</span><b>{{ section_counts.balcony - sold_by_section.balcony }} <small>left</small></b></div>
+</div>
+
+<div class="booking-layout">
+  <section class="card map-card">
+    <div class="map-toolbar">
+      <div class="legend">
+        <span><i class="seat demo"></i>Stalls</span>
+        <span><i class="seat demo balc"></i>Balcony</span>
+        <span><i class="seat demo sel"></i>Selected</span>
+        <span><i class="seat demo booked"></i>Booked</span>
+      </div>
+      <div class="zoom">
+        <button type="button" class="btn btn-ghost btn-sm" data-zoom="-1" aria-label="Zoom out">−</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-zoom="0">Fit</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-zoom="1" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <p class="hint tip">Tip: click a seat, then <kbd>Shift</kbd>+click another seat in the same row to select everything between. Click a grey seat to open its booking.</p>
+
+    <div class="hall-scroll" id="hallScroll">
+      <div class="hall" id="hall">
+        <div class="stage"><span>STAGE</span></div>
+        {% for sec in layout %}
+          {% if sec.key == 'balcony' %}<div class="section-label balcony-label"><span>BALCONY</span></div>
+          {% else %}<div class="section-label"><span>STALLS</span></div>{% endif %}
+          <div class="seat-grid sec-{{ sec.key }}">
+            {% for r in sec.rows %}
+              <div class="rl">{{ r.row }}</div>
+              {% for block in r.blocks %}
+                <div class="blk b{{ loop.index }}">
+                  {%- for n in block -%}
+                    {%- set lab = r.row ~ n -%}
+                    {%- if lab in booked -%}
+                      <a class="seat booked" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ lab }} · {{ booked[lab].customer_name }} · {{ booked[lab].code }}">{{ n }}</a>
+                    {%- else -%}
+                      <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" title="{{ lab }}">{{ n }}</button>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </div>
+                {% if not loop.last %}<div class="aisle"></div>{% endif %}
+              {% endfor %}
+              <div class="rl">{{ r.row }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <aside class="card panel" id="panel">
+    <form method="post" action="{{ url_for('book', show_id=show.id) }}" id="bookForm" autocomplete="off">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="seats" id="seatsInput" value="">
+
+      <div class="panel-head">
+        <h2>New booking</h2>
+        <span class="counter" id="counter"><b>0</b> / {{ MAX_SEATS }}</span>
+      </div>
+
+      <div class="chips" id="chips"><p class="muted small" id="chipsEmpty">Select seats on the map ({{ min_seats }}–{{ MAX_SEATS }}).</p></div>
+      <button type="button" class="link-btn" id="clearSel" hidden>Clear selection</button>
+
+      <div class="summary" id="summary">
+        <div><span>Stalls</span><em id="nStall">0</em></div>
+        <div><span>Balcony</span><em id="nBalc">0</em></div>
+        <div class="total"><span>Total seats</span><span id="tTotal">0</span></div>
+      </div>
+
+      <fieldset class="details">
+        <legend>Customer details</legend>
+        <label class="field"><span>Full name *</span>
+          <input name="customer_name" required value="{{ form.get('customer_name', '') }}" placeholder="Name on the booking"></label>
+        <div class="row2">
+          <label class="field"><span>Phone *</span>
+            <input name="phone" type="tel" inputmode="tel" required value="{{ form.get('phone', '') }}" placeholder="98xxxxxxxx"></label>
+          <label class="field"><span>City</span>
+            <input name="city" value="{{ form.get('city', '') }}"></label>
+        </div>
+        <label class="field"><span>Email</span>
+          <input name="email" type="email" value="{{ form.get('email', '') }}" placeholder="optional"></label>
+        <label class="field"><span>Notes</span>
+          <textarea name="notes" rows="2" placeholder="Group name, special requests…">{{ form.get('notes', '') }}</textarea></label>
+      </fieldset>
+
+      <button class="btn btn-primary btn-block" id="submitBtn" type="submit" disabled>Select seats to book</button>
+    </form>
+  </aside>
+</div>
+
+<div class="mobile-bar" id="mobileBar">
+  <span><b id="mCount">0</b> seat(s) selected</span>
+  <a href="#panel" class="btn btn-primary btn-sm">Enter details ↓</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SEATMAP = {
+    max: {{ MAX_SEATS }},
+    min: {{ min_seats }},
+    preselect: {{ preselect|tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='seatmap.js') }}"></script>
+{% endblock %}

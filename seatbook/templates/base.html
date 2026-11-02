@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %} · {{ APP_NAME }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% if session.get('admin') %}
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V7Zm6 0v10h1.5V7H10Z"/></svg>
+      </span>
+      {{ APP_NAME }}
+    </a>
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint == 'dashboard' }}">Shows</a>
+      <a href="{{ url_for('bookings') }}" class="{{ 'on' if request.endpoint in ('bookings', 'booking_detail') }}">Bookings</a>
+    </nav>
+    <div class="top-actions">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('show_new') }}">+ New show</a>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn btn-ghost btn-sm" type="submit">Log out</button>
+      </form>
+    </div>
+  </header>
+  {% if not PERSISTENT %}
+  <div class="banner">No database connected — bookings will disappear when the server restarts. Add Neon Postgres in Vercel → Storage.</div>
+  {% endif %}
+  {% endif %}
+
+  <div class="toasts" id="toasts">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}
+      <div class="toast toast-{{ cat }}" role="status">{{ msg }}</div>
+    {% endfor %}
+  </div>
+
+  <main class="{% block main_class %}page{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // auto-hide toasts
+    document.querySelectorAll('.toast').forEach(function (t, i) {
+      setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 400); }, 4500 + i * 600);
+      t.addEventListener('click', function () { t.remove(); });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ b.code }}{% endblock %}
+{% block content %}
+<div class="narrow wide-narrow">
+  <div class="page-head no-print">
+    <div>
+      <a class="back" href="{{ url_for('seat_map', show_id=b.show_id) }}">← Back to seat map</a>
+      <h1>Booking {{ b.code }}</h1>
+    </div>
+    <div class="head-actions">
+      <button class="btn btn-ghost" onclick="window.print()">Print ticket</button>
+      <a class="btn btn-primary" href="{{ url_for('seat_map', show_id=b.show_id) }}">+ Another booking</a>
+    </div>
+  </div>
+
+  <article class="ticket {{ 'ticket-off' if b.status == 'cancelled' }}">
+    <div class="ticket-main">
+      <div class="ticket-top">
+        <span class="status status-{{ b.status }}">{{ b.status|capitalize }}</span>
+        <span class="mono code">{{ b.code }}</span>
+      </div>
+      <h2>{{ b.show_title }}</h2>
+      <p class="muted">{{ b.show_date|nicedate }}{% if b.show_time %} · {{ b.show_time|nicetime }}{% endif %}{% if b.venue %} · {{ b.venue }}{% endif %}</p>
+
+      <div class="ticket-grid">
+        <div><span>Guest</span><b>{{ b.customer_name }}</b></div>
+        <div><span>Phone</span><b>{{ b.phone }}</b></div>
+        {% if b.email %}<div><span>Email</span><b>{{ b.email }}</b></div>{% endif %}
+        {% if b.city %}<div><span>City</span><b>{{ b.city }}</b></div>{% endif %}
+        <div><span>Seats</span><b>{{ b.num_seats }}</b></div>
+      </div>
+
+      <div class="ticket-seats">
+        {% for row, nums in b.seats|rowgroups %}
+          <div class="seat-row"><span class="row-tag">Row {{ row }}</span>
+            {% for n in nums %}<span class="seat-tag">{{ row }}{{ n }}</span>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if b.notes %}<p class="ticket-notes"><span>Notes</span>{{ b.notes }}</p>{% endif %}
+      <p class="small muted">Booked {{ b.created_at|ist }}{% if b.cancelled_at %} · Cancelled {{ b.cancelled_at|ist }}{% endif %}</p>
+    </div>
+    <div class="ticket-stub" aria-hidden="true">
+      <span class="stub-count">{{ b.num_seats }}</span>
+      <span class="stub-label">ADMIT</span>
+      <span class="mono stub-code">{{ b.code }}</span>
+    </div>
+  </article>
+
+  {% if b.status == 'confirmed' %}
+  <details class="card edit-card no-print">
+    <summary>Edit customer details</summary>
+    <form method="post" action="{{ url_for('booking_edit', code=b.code) }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="row2">
+        <label class="field"><span>Full name *</span><input name="customer_name" value="{{ b.customer_name }}" required></label>
+        <label class="field"><span>Phone *</span><input name="phone" value="{{ b.phone }}" required></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Email</span><input name="email" type="email" value="{{ b.email or '' }}"></label>
+        <label class="field"><span>City</span><input name="city" value="{{ b.city or '' }}"></label>
+      </div>
+      <label class="field"><span>Notes</span><textarea name="notes" rows="2">{{ b.notes or '' }}</textarea></label>
+      <p class="hint">To change seats, cancel this booking and make a new one.</p>
+      <button class="btn btn-primary" type="submit">Save details</button>
+    </form>
+  </details>
+
+  <form class="card danger-zone no-print" method="post" action="{{ url_for('booking_cancel', code=b.code) }}"
+        onsubmit="return confirm('Cancel booking {{ b.code }} and release {{ b.num_seats }} seat(s)?');">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div>
+      <b>Cancel booking</b>
+      <p class="muted small">Releases all {{ b.num_seats }} seat(s) back to the map. The record is kept as “Cancelled”.</p>
+    </div>
+    <button class="btn btn-danger" type="submit">Cancel booking</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
