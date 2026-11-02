@@ -270,6 +270,10 @@ def book(show_id):
     show = get_show_or_404(show_id)
     f = request.form
     seats = parse_seats(f.get("seats"))
+    try:
+        requested_count = int(f.get("seat_count", ""))
+    except ValueError:
+        requested_count = 0
     name = f.get("customer_name", "").strip()
     phone = clean_phone(f.get("phone"))
     email = f.get("email", "").strip()
@@ -278,8 +282,10 @@ def book(show_id):
     bad = [s for s in seats if s not in ALL_SEATS]
     if bad:
         errors.append("Unknown seat(s): " + ", ".join(bad))
-    if not (MIN_SEATS <= len(seats) <= MAX_SEATS):
-        errors.append(f"Select between {MIN_SEATS} and {MAX_SEATS} seats (you selected {len(seats)}).")
+    if not (MIN_SEATS <= requested_count <= MAX_SEATS):
+        errors.append(f"Choose between {MIN_SEATS} and {MAX_SEATS} seats.")
+    elif len(seats) != requested_count:
+        errors.append(f"Select exactly {requested_count} seat(s) (you selected {len(seats)}).")
     if not name:
         errors.append("Customer name is required.")
     if not phone:

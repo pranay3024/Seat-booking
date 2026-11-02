@@ -2,7 +2,6 @@
   var cfg = window.SEATMAP;
   var hall = document.getElementById('hall');
   var selected = [];               // seat labels in click order
-  var lastClicked = null;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -19,6 +18,10 @@
 
   function rowOrder(label) {
     return label.charCodeAt(0) * 1000 + parseInt(label.slice(1), 10);
+  }
+
+  function seatCount() {
+    return parseInt($('seatCount').value, 10);
   }
 
   function setSelected(label, on) {
@@ -38,6 +41,41 @@
     return true;
   }
 
+  function groupFrom(anchor, count) {
+    var row = Array.prototype.slice.call(hall.querySelectorAll('.seat-grid .seat[data-seat]'))
+      .filter(function (seat) { return seat.dataset.seat[0] === anchor[0]; })
+      .sort(function (a, b) { return rowOrder(a.dataset.seat) - rowOrder(b.dataset.seat); });
+    var anchorIndex = row.findIndex(function (seat) { return seat.dataset.seat === anchor; });
+    if (anchorIndex === -1 || count > row.length) return null;
+
+    var firstStart = Math.min(anchorIndex, row.length - count);
+    var lastStart = Math.max(0, anchorIndex - count + 1);
+    for (var start = firstStart; start >= lastStart; start--) {
+      var group = row.slice(start, start + count);
+      var consecutive = group.every(function (seat, index) {
+        return index === 0 || parseInt(seat.dataset.seat.slice(1), 10) ===
+          parseInt(group[index - 1].dataset.seat.slice(1), 10) + 1;
+      });
+      var available = group.every(function (seat) {
+        return !seat.classList.contains('booked');
+      });
+      if (consecutive && available) return group.map(function (seat) { return seat.dataset.seat; });
+    }
+    return null;
+  }
+
+  function selectGroup(anchor) {
+    var count = seatCount();
+    var group = groupFrom(anchor, count);
+    if (!group) {
+      toast('Could not find ' + count + ' consecutive available seats in that row. Try another seat or choose fewer seats.');
+      return false;
+    }
+    selected.slice().forEach(function (label) { setSelected(label, false); });
+    group.forEach(function (label) { setSelected(label, true); });
+    return true;
+  }
+
   function render() {
     var sorted = selected.slice().sort(function (a, b) { return rowOrder(a) - rowOrder(b); });
     $('seatsInput').value = sorted.join(',');
@@ -50,8 +88,9 @@
     $('nStall').textContent = nStall;
     $('nBalc').textContent = nBalc;
     $('tTotal').textContent = sorted.length;
-    $('counter').innerHTML = '<b>' + sorted.length + '</b> / ' + cfg.max;
-    $('counter').classList.toggle('full', sorted.length >= cfg.max);
+    var requested = seatCount();
+    $('counter').innerHTML = '<b>' + sorted.length + '</b> / ' + requested;
+    $('counter').classList.toggle('full', sorted.length === requested);
     $('mCount').textContent = sorted.length;
     $('mobileBar').classList.toggle('show', sorted.length > 0);
 
@@ -71,30 +110,27 @@
     });
 
     var btn = $('submitBtn');
-    var ok = sorted.length >= cfg.min && sorted.length <= cfg.max;
+    var ok = sorted.length === requested;
     btn.disabled = !ok;
     btn.textContent = ok
       ? 'Confirm booking · ' + sorted.length + ' seat' + (sorted.length > 1 ? 's' : '')
-      : 'Select seats to book';
+      : 'Select ' + requested + ' seat' + (requested === 1 ? '' : 's');
   }
 
   hall.addEventListener('click', function (e) {
     var b = e.target.closest('button.seat');
     if (!b) return;
-    var label = b.dataset.seat;
+    selectGroup(b.dataset.seat);
+    render();
+  });
 
-    // Shift+click: select range within the same row
-    if (e.shiftKey && lastClicked && lastClicked[0] === label[0] && lastClicked !== label) {
-      var row = label[0];
-      var a = parseInt(lastClicked.slice(1), 10), z = parseInt(label.slice(1), 10);
-      var lo = Math.min(a, z), hi = Math.max(a, z);
-      for (var n = lo; n <= hi; n++) {
-        if (!setSelected(row + n, true)) { if (selected.length >= cfg.max) break; }
+  $('seatCount').addEventListener('change', function () {
+    if (selected.length) {
+      var anchor = selected[0];
+      if (!selectGroup(anchor)) {
+        selected.slice().forEach(function (label) { setSelected(label, false); });
       }
-    } else {
-      setSelected(label, selected.indexOf(label) === -1);
     }
-    lastClicked = label;
     render();
   });
 
@@ -105,9 +141,9 @@
 
 
   $('bookForm').addEventListener('submit', function (e) {
-    if (selected.length < cfg.min || selected.length > cfg.max) {
+    if (selected.length !== seatCount()) {
       e.preventDefault();
-      toast('Select between ' + cfg.min + ' and ' + cfg.max + ' seats.');
+      toast('Select exactly ' + seatCount() + ' seats.');
       return;
     }
     $('submitBtn').disabled = true;

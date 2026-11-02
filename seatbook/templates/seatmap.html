@@ -36,7 +36,7 @@
         <button type="button" class="btn btn-ghost btn-sm" data-zoom="1" aria-label="Zoom in">+</button>
       </div>
     </div>
-    <p class="hint tip">Tip: click a seat, then <kbd>Shift</kbd>+click another seat in the same row to select everything between. Click a grey seat to open its booking.</p>
+    <p class="hint tip">Choose how many seats you need, then click an available seat. We’ll select that many available seats together in the same row. Click a grey seat to open its booking.</p>
 
     <div class="hall-scroll" id="hallScroll">
       <div class="hall" id="hall">
@@ -52,7 +52,7 @@
                   {%- for n in block -%}
                     {%- set lab = r.row ~ n -%}
                     {%- if lab in booked -%}
-                      <a class="seat booked" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ lab }} · {{ booked[lab].customer_name }} · {{ booked[lab].code }}">{{ n }}</a>
+                      <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ lab }} · {{ booked[lab].customer_name }} · {{ booked[lab].code }}">{{ n }}</a>
                     {%- else -%}
                       <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" title="{{ lab }}">{{ n }}</button>
                     {%- endif -%}
@@ -75,10 +75,19 @@
 
       <div class="panel-head">
         <h2>New booking</h2>
-        <span class="counter" id="counter"><b>0</b> / {{ MAX_SEATS }}</span>
+        <span class="counter" id="counter"><b>0</b> / {{ form.get('seat_count', 1) }}</span>
       </div>
 
-      <div class="chips" id="chips"><p class="muted small" id="chipsEmpty">Select seats on the map ({{ min_seats }}–{{ MAX_SEATS }}).</p></div>
+      <label class="field">
+        <span>Number of seats</span>
+        <select id="seatCount" name="seat_count" aria-label="Number of seats">
+          {% for count in range(min_seats, MAX_SEATS + 1) %}
+          <option value="{{ count }}" {{ 'selected' if form.get('seat_count', '1')|string == count|string }}>{{ count }} seat{{ 's' if count != 1 }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="chips" id="chips"><p class="muted small" id="chipsEmpty">Choose a count, then click an available seat.</p></div>
       <button type="button" class="link-btn" id="clearSel" hidden>Clear selection</button>
 
       <div class="summary" id="summary">
@@ -110,7 +119,7 @@
 
 <div class="mobile-bar" id="mobileBar">
   <span><b id="mCount">0</b> seat(s) selected</span>
-  <a href="#panel" class="btn btn-primary btn-sm">Enter details ↓</a>
+  <a href="#panel" class="btn btn-primary btn-sm">Booking details ↓</a>
 </div>
 {% endblock %}
 
