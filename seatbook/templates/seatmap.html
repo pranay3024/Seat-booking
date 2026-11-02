@@ -36,7 +36,7 @@
         <button type="button" class="btn btn-ghost btn-sm" data-zoom="1" aria-label="Zoom in">+</button>
       </div>
     </div>
-    <p class="hint tip">Choose how many seats you need, then click an available seat. We’ll select that many available seats together in the same row. Click a grey seat to open its booking.</p>
+    <p class="hint tip">Choose how many seats you need, then click an available seat. We’ll fill that block from your seat across its row, then continue down the rows below without crossing the aisles. Click selected seats to remove them or other available seats to change your selection.</p>
 
     <div class="hall-scroll" id="hallScroll">
       <div class="hall" id="hall">
@@ -48,13 +48,14 @@
             {% for r in sec.rows %}
               <div class="rl">{{ r.row }}</div>
               {% for block in r.blocks %}
-                <div class="blk b{{ loop.index }}">
+                {% set block_index = loop.index %}
+                <div class="blk b{{ block_index }}">
                   {%- for n in block -%}
                     {%- set lab = r.row ~ n -%}
                     {%- if lab in booked -%}
                       <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ lab }} · {{ booked[lab].customer_name }} · {{ booked[lab].code }}">{{ n }}</a>
                     {%- else -%}
-                      <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" title="{{ lab }}">{{ n }}</button>
+                      <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" data-block="{{ block_index }}" title="{{ lab }}">{{ n }}</button>
                     {%- endif -%}
                   {%- endfor -%}
                 </div>
@@ -131,5 +132,5 @@
     preselect: {{ preselect|tojson }}
   };
 </script>
-<script src="{{ url_for('static', filename='seatmap.js') }}"></script>
+<script src="{{ url_for('static', filename='seatmap.js', v='seat-count-block-rows') }}"></script>
 {% endblock %}

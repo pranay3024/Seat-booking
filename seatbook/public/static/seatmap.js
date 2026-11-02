@@ -41,39 +41,35 @@
     return true;
   }
 
-  function groupFrom(anchor, count) {
-    var row = Array.prototype.slice.call(hall.querySelectorAll('.seat-grid .seat[data-seat]'))
-      .filter(function (seat) { return seat.dataset.seat[0] === anchor[0]; })
+  function selectFromAnchor(anchor, section, block) {
+    var count = seatCount();
+    var seats = Array.prototype.slice.call(hall.querySelectorAll('.seat-grid .seat[data-seat]'))
+      .filter(function (seat) {
+        return seat.dataset.sec === section && seat.dataset.block === block;
+      })
       .sort(function (a, b) { return rowOrder(a.dataset.seat) - rowOrder(b.dataset.seat); });
-    var anchorIndex = row.findIndex(function (seat) { return seat.dataset.seat === anchor; });
-    if (anchorIndex === -1 || count > row.length) return null;
+    var anchorIndex = seats.findIndex(function (seat) { return seat.dataset.seat === anchor; });
+    if (anchorIndex === -1) return;
 
-    var firstStart = Math.min(anchorIndex, row.length - count);
-    var lastStart = Math.max(0, anchorIndex - count + 1);
-    for (var start = firstStart; start >= lastStart; start--) {
-      var group = row.slice(start, start + count);
-      var consecutive = group.every(function (seat, index) {
-        return index === 0 || parseInt(seat.dataset.seat.slice(1), 10) ===
-          parseInt(group[index - 1].dataset.seat.slice(1), 10) + 1;
-      });
-      var available = group.every(function (seat) {
-        return !seat.classList.contains('booked');
-      });
-      if (consecutive && available) return group.map(function (seat) { return seat.dataset.seat; });
+    var available = seats.slice(anchorIndex).filter(function (seat) {
+      return !seat.classList.contains('booked');
+    }).slice(0, count);
+    available.forEach(function (seat) { setSelected(seat.dataset.seat, true); });
+    if (available.length < count) {
+      toast('Only ' + available.length + ' seats are available in this block from there onward. Select more seats manually or choose fewer.');
     }
-    return null;
   }
 
-  function selectGroup(anchor) {
-    var count = seatCount();
-    var group = groupFrom(anchor, count);
-    if (!group) {
-      toast('Could not find ' + count + ' consecutive available seats in that row. Try another seat or choose fewer seats.');
+  function toggleSeat(label) {
+    if (selected.indexOf(label) !== -1) {
+      setSelected(label, false);
       return false;
     }
-    selected.slice().forEach(function (label) { setSelected(label, false); });
-    group.forEach(function (label) { setSelected(label, true); });
-    return true;
+    if (selected.length >= seatCount()) {
+      toast('Deselect a seat first, or increase the number of seats.');
+      return false;
+    }
+    return setSelected(label, true);
   }
 
   function render() {
@@ -98,6 +94,9 @@
     var chips = $('chips');
     chips.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
     $('chipsEmpty').hidden = sorted.length > 0;
+    $('chipsEmpty').textContent = sorted.length
+      ? ''
+      : 'Click an available seat to select your group.';
     $('clearSel').hidden = sorted.length === 0;
     sorted.forEach(function (l) {
       var c = document.createElement('button');
@@ -114,23 +113,22 @@
     btn.disabled = !ok;
     btn.textContent = ok
       ? 'Confirm booking · ' + sorted.length + ' seat' + (sorted.length > 1 ? 's' : '')
-      : 'Select ' + requested + ' seat' + (requested === 1 ? '' : 's');
+      : 'Select ' + (requested - sorted.length) + ' more seat' + (requested - sorted.length === 1 ? '' : 's');
   }
 
   hall.addEventListener('click', function (e) {
     var b = e.target.closest('button.seat');
     if (!b) return;
-    selectGroup(b.dataset.seat);
+    if (selected.length === 0) {
+      selectFromAnchor(b.dataset.seat, b.dataset.sec, b.dataset.block);
+    } else {
+      toggleSeat(b.dataset.seat);
+    }
     render();
   });
 
   $('seatCount').addEventListener('change', function () {
-    if (selected.length) {
-      var anchor = selected[0];
-      if (!selectGroup(anchor)) {
-        selected.slice().forEach(function (label) { setSelected(label, false); });
-      }
-    }
+    selected.slice().forEach(function (label) { setSelected(label, false); });
     render();
   });
 

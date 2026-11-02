@@ -7,7 +7,8 @@ The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Bal
 - Admin login (single admin account set by environment variables)
 - After login, the **Singing Show** seat map opens directly
 - Interactive seat map with zoom and fit controls
-- Choose **1–50 seats**; clicking an available seat selects that many consecutive available seats in its row
+- Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
+- Click selected seats to remove them, then click other available seats to choose replacements
 - Book with customer details (name, phone, email, city, notes) — no prices or payments
 - Double-booking is impossible (database-level lock on each seat)
 - Click any grey (booked) seat to open that booking
