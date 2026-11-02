@@ -4,12 +4,12 @@
 <div class="narrow wide-narrow">
   <div class="page-head no-print">
     <div>
-      <a class="back" href="{{ url_for('seat_map', show_id=b.show_id) }}">← Back to seat map</a>
+      <a class="back" href="{{ url_for('dashboard') }}">← Back to seat map</a>
       <h1>Booking {{ b.code }}</h1>
     </div>
     <div class="head-actions">
       <button class="btn btn-ghost" onclick="window.print()">Print ticket</button>
-      <a class="btn btn-primary" href="{{ url_for('seat_map', show_id=b.show_id) }}">+ Another booking</a>
+      <a class="btn btn-primary" href="{{ url_for('dashboard') }}">+ Another booking</a>
     </div>
   </div>
 
@@ -20,7 +20,6 @@
         <span class="mono code">{{ b.code }}</span>
       </div>
       <h2>{{ b.show_title }}</h2>
-      <p class="muted">{{ b.show_date|nicedate }}{% if b.show_time %} · {{ b.show_time|nicetime }}{% endif %}{% if b.venue %} · {{ b.venue }}{% endif %}</p>
 
       <div class="ticket-grid">
         <div><span>Guest</span><b>{{ b.customer_name }}</b></div>

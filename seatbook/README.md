@@ -1,18 +1,17 @@
-# SeatDesk — admin seat booking (Flask)
+# SeatDesk — single-show seat booking (Flask)
 
-An admin-only booking system for your auditorium (BookMyShow-style seat map).
+An admin-only booking system for one auditorium show (BookMyShow-style seat map).
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
 - Admin login (single admin account set by environment variables)
-- Create shows/events with date, time and venue
+- Opens directly to one seat map, labeled **Singing Show**
 - Interactive seat map: click seats, **Shift+click** to select a run of seats in a row, zoom / fit
 - Book **1–50 seats** per booking with customer details (name, phone, email, city, notes) — no prices or payments
 - Double-booking is impossible (database-level lock on each seat)
 - Click any grey (booked) seat to open that booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
-- Bookings list with search, filter by show/status, **CSV export** (opens in Excel)
-- Dashboard: seats booked per show, recent bookings
+- Bookings list with search, filter by status, **CSV export** (opens in Excel)
 - Works on phone and desktop
 
 ---
@@ -117,6 +116,12 @@ The database schema also creates an `admins` table with a `password_hash` column
 It is not populated automatically; the current login still uses
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` from the environment, and those values
 should never be stored as plaintext in the database.
+
+The app preserves bookings for the single existing show and uses that record
+for the seat map. If the database contains more than one show, set
+`SINGLE_SHOW_ID` in Vercel to the ID of the show whose bookings and seats
+should appear. Other show and booking records are not deleted. If the database
+has no show record yet, the app creates one automatically.
 
 ## Step 5 — Making changes later
 

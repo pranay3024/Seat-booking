@@ -20,11 +20,10 @@
       {{ APP_NAME }}
     </a>
     <nav class="nav">
-      <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint == 'dashboard' }}">Shows</a>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint in ('dashboard', 'seat_map') }}">Seat map</a>
       <a href="{{ url_for('bookings') }}" class="{{ 'on' if request.endpoint in ('bookings', 'booking_detail') }}">Bookings</a>
     </nav>
     <div class="top-actions">
-      <a class="btn btn-primary btn-sm" href="{{ url_for('show_new') }}">+ New show</a>
       <form method="post" action="{{ url_for('logout') }}">
         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
         <button class="btn btn-ghost btn-sm" type="submit">Log out</button>
