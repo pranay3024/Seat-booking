@@ -223,6 +223,8 @@ def check_csrf():
     if request.method == "POST":
         token = request.form.get("_csrf", "")
         if not token or not hmac.compare_digest(token, session.get("_csrf", "")):
+            if request.endpoint == "login" and current_role() in ("admin", "viewer"):
+                return redirect(url_for("dashboard"))
             abort(400, "Form expired — please go back, refresh and try again.")
 
 
