@@ -81,9 +81,6 @@
     var seatsInput = $('seatsInput');
     if (seatsInput) seatsInput.value = sorted.join(',');
 
-    var nStallEl = $('nStall');
-    var nBalcEl = $('nBalc');
-    var totalEl = $('tTotal');
     var counterEl = $('counter');
     var mCountEl = $('mCount');
     var mobileBarEl = $('mobileBar');
@@ -91,15 +88,6 @@
     var chipsEmpty = $('chipsEmpty');
     var clearSel = $('clearSel');
     var submitBtn = $('submitBtn');
-
-    var nStall = 0, nBalc = 0;
-    sorted.forEach(function (l) {
-      var b = btnFor(l);
-      if (b && b.dataset.sec === 'balcony') nBalc++; else nStall++;
-    });
-    if (nStallEl) nStallEl.textContent = nStall;
-    if (nBalcEl) nBalcEl.textContent = nBalc;
-    if (totalEl) totalEl.textContent = sorted.length;
 
     var requested = seatCount();
     if (counterEl) {

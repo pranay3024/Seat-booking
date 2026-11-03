@@ -21,7 +21,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import db
 from seats import (
-    ALL_SEATS, LAYOUT, SECTION_COUNTS, SECTION_OF, TOTAL_SEATS, group_by_row, seat_sort_key,
+    ALL_SEATS, LAYOUT, TOTAL_SEATS, group_by_row, seat_sort_key,
 )
 
 # ---------------------------------------------------------------- config
@@ -316,17 +316,12 @@ def dashboard():
 # ---------------------------------------------------------------- seat map + booking
 def _render_map(show, form=None, preselect=None, status=200):
     booked = booked_map(show["id"])
-    sold_by_section = {"stalls": 0, "balcony": 0}
-    for seat in booked:
-        sold_by_section[SECTION_OF.get(seat, "stalls")] += 1
     return render_template(
         "seatmap.html",
         show=show,
         layout=LAYOUT,
         booked=booked,
         sold=len(booked),
-        sold_by_section=sold_by_section,
-        section_counts=SECTION_COUNTS,
         form=form or {},
         preselect=preselect or [],
         min_seats=MIN_SEATS,
