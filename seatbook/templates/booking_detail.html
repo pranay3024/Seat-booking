@@ -21,11 +21,14 @@
         <span class="status status-{{ b.status }}">{{ b.status|capitalize }}</span>
         <span class="mono code">{{ b.code }}</span>
       </div>
-      <h2 class="event-title event-title-small">{{ b.show_title }}</h2>
+      <h2 class="event-title event-title-small" aria-label="{{ b.show_title }}">
+        <span class="event-word">रैना</span>
+        <span class="event-word">बीती</span>
+        <span class="event-word">जाए...</span>
+      </h2>
       <p class="event-meta event-meta-small">
-        {% if b.show_time %}<span>{{ b.show_time|nicetime }}</span>{% endif %}
-        {% if b.show_time %}<span class="event-separator">•</span>{% endif %}
         <span>{{ b.show_date|nicedate }}</span>
+        {% if b.show_time %}<span class="event-separator">•</span><span>{{ b.show_time|nicetime }}</span>{% endif %}
         {% if b.venue %}<span class="event-separator">•</span><span>{{ b.venue }}</span>{% endif %}
       </p>
 

@@ -1,12 +1,15 @@
 (function () {
-  var cfg = window.SEATMAP;
+  var cfg = window.SEATMAP || { max: 50, min: 1, preselect: [] };
   var hall = document.getElementById('hall');
-  var selected = [];               // seat labels in click order
+  var selected = [];
 
   var $ = function (id) { return document.getElementById(id); };
 
+  if (!hall) return;
+
   function toast(msg) {
     var box = $('toasts');
+    if (!box) return;
     var t = document.createElement('div');
     t.className = 'toast toast-error';
     t.textContent = msg;
@@ -21,7 +24,8 @@
   }
 
   function seatCount() {
-    return parseInt($('seatCount').value, 10);
+    var seatCountEl = $('seatCount');
+    return seatCountEl ? parseInt(seatCountEl.value, 10) : 1;
   }
 
   function setSelected(label, on) {
@@ -74,46 +78,65 @@
 
   function render() {
     var sorted = selected.slice().sort(function (a, b) { return rowOrder(a) - rowOrder(b); });
-    $('seatsInput').value = sorted.join(',');
+    var seatsInput = $('seatsInput');
+    if (seatsInput) seatsInput.value = sorted.join(',');
+
+    var nStallEl = $('nStall');
+    var nBalcEl = $('nBalc');
+    var totalEl = $('tTotal');
+    var counterEl = $('counter');
+    var mCountEl = $('mCount');
+    var mobileBarEl = $('mobileBar');
+    var chips = $('chips');
+    var chipsEmpty = $('chipsEmpty');
+    var clearSel = $('clearSel');
+    var submitBtn = $('submitBtn');
 
     var nStall = 0, nBalc = 0;
     sorted.forEach(function (l) {
       var b = btnFor(l);
       if (b && b.dataset.sec === 'balcony') nBalc++; else nStall++;
     });
-    $('nStall').textContent = nStall;
-    $('nBalc').textContent = nBalc;
-    $('tTotal').textContent = sorted.length;
+    if (nStallEl) nStallEl.textContent = nStall;
+    if (nBalcEl) nBalcEl.textContent = nBalc;
+    if (totalEl) totalEl.textContent = sorted.length;
+
     var requested = seatCount();
-    $('counter').innerHTML = '<b>' + sorted.length + '</b> / ' + requested;
-    $('counter').classList.toggle('full', sorted.length === requested);
-    $('mCount').textContent = sorted.length;
-    $('mobileBar').classList.toggle('show', sorted.length > 0);
+    if (counterEl) {
+      counterEl.innerHTML = '<b>' + sorted.length + '</b> / ' + requested;
+      counterEl.classList.toggle('full', sorted.length === requested);
+    }
+    if (mCountEl) mCountEl.textContent = sorted.length;
+    if (mobileBarEl) mobileBarEl.classList.toggle('show', sorted.length > 0);
 
-    // chips grouped by row: "A 5 6 7"
-    var chips = $('chips');
-    chips.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
-    $('chipsEmpty').hidden = sorted.length > 0;
-    $('chipsEmpty').textContent = sorted.length
-      ? ''
-      : 'Click an available seat to select your group.';
-    $('clearSel').hidden = sorted.length === 0;
-    sorted.forEach(function (l) {
-      var c = document.createElement('button');
-      c.type = 'button';
-      c.className = 'chip';
-      c.title = 'Remove ' + l;
-      c.innerHTML = l + ' <span aria-hidden="true">×</span>';
-      c.addEventListener('click', function () { setSelected(l, false); render(); });
-      chips.appendChild(c);
-    });
+    if (chips) {
+      chips.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
+    }
+    if (chipsEmpty) {
+      chipsEmpty.hidden = sorted.length > 0;
+      chipsEmpty.textContent = sorted.length ? '' : 'Click an available seat to select your group.';
+    }
+    if (clearSel) clearSel.hidden = sorted.length === 0;
 
-    var btn = $('submitBtn');
-    var ok = sorted.length === requested;
-    btn.disabled = !ok;
-    btn.textContent = ok
-      ? 'Confirm booking · ' + sorted.length + ' seat' + (sorted.length > 1 ? 's' : '')
-      : 'Select ' + (requested - sorted.length) + ' more seat' + (requested - sorted.length === 1 ? '' : 's');
+    if (chips) {
+      sorted.forEach(function (l) {
+        var c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'chip';
+        c.title = 'Remove ' + l;
+        c.innerHTML = l + ' <span aria-hidden="true">?</span>';
+        c.addEventListener('click', function () { setSelected(l, false); render(); });
+        chips.appendChild(c);
+      });
+    }
+
+    if (submitBtn) {
+      var ok = sorted.length === requested;
+      submitBtn.disabled = !ok;
+      submitBtn.textContent = ok
+        ? 'Confirm booking ? ' + sorted.length + ' seat' + (sorted.length > 1 ? 's' : '')
+        : 'Select ' + (requested - sorted.length) + ' more seat' + (requested - sorted.length === 1 ? '' : 's');
+    }
   }
 
   hall.addEventListener('click', function (e) {
@@ -127,37 +150,49 @@
     render();
   });
 
-  $('seatCount').addEventListener('change', function () {
-    selected.slice().forEach(function (label) { setSelected(label, false); });
-    render();
-  });
+  var seatCountEl = $('seatCount');
+  if (seatCountEl) {
+    seatCountEl.addEventListener('change', function () {
+      selected.slice().forEach(function (label) { setSelected(label, false); });
+      render();
+    });
+  }
 
-  $('clearSel').addEventListener('click', function () {
-    selected.slice().forEach(function (l) { setSelected(l, false); });
-    render();
-  });
+  var clearSel = $('clearSel');
+  if (clearSel) {
+    clearSel.addEventListener('click', function () {
+      selected.slice().forEach(function (l) { setSelected(l, false); });
+      render();
+    });
+  }
 
+  var bookForm = $('bookForm');
+  if (bookForm) {
+    bookForm.addEventListener('submit', function (e) {
+      if (selected.length !== seatCount()) {
+        e.preventDefault();
+        toast('Select exactly ' + seatCount() + ' seats.');
+        return;
+      }
+      var submitBtn = $('submitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Booking?';
+      }
+    });
+  }
 
-  $('bookForm').addEventListener('submit', function (e) {
-    if (selected.length !== seatCount()) {
-      e.preventDefault();
-      toast('Select exactly ' + seatCount() + ' seats.');
-      return;
-    }
-    $('submitBtn').disabled = true;
-    $('submitBtn').textContent = 'Booking…';
-  });
-
-  // Zoom
   var zoom = 1;
   var scroll = $('hallScroll');
   function fit() {
     hall.style.setProperty('--z', 1);
     var natural = hall.scrollWidth;
-    var avail = scroll.clientWidth - 8;
+    var avail = scroll ? (scroll.clientWidth - 8) : 900;
+    if (!natural) return;
     zoom = Math.max(0.45, Math.min(1.4, avail / natural));
     hall.style.setProperty('--z', zoom.toFixed(3));
   }
+
   document.querySelectorAll('[data-zoom]').forEach(function (b) {
     b.addEventListener('click', function () {
       var d = parseInt(b.dataset.zoom, 10);
@@ -167,7 +202,6 @@
     });
   });
 
-  // keyboard: buttons are already focusable; Enter/Space toggles natively
   hall.querySelectorAll('button.seat').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
 
   (cfg.preselect || []).forEach(function (l) { setSelected(l, true); });
