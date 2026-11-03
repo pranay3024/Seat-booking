@@ -155,12 +155,17 @@ def get_booking_or_404(code):
 
 def booked_map(show_id):
     rows = db.query(
-        """SELECT bs.seat, b.code, b.customer_name, b.phone
-           FROM booked_seats bs JOIN bookings b ON b.id = bs.booking_id
-           WHERE bs.show_id = ?""",
+        """SELECT b.seats, b.code, b.customer_name, b.phone
+           FROM bookings b
+           WHERE b.show_id = ? AND b.status = 'confirmed'""",
         (show_id,),
     )
-    return {r["seat"]: r for r in rows}
+    booked = {}
+    for row in rows:
+        for seat in parse_seats(row["seats"]):
+            if seat in ALL_SEATS:
+                booked[seat] = row
+    return booked
 
 
 # ---------------------------------------------------------------- template filters
