@@ -44,7 +44,9 @@ ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "" if db.ON_VERCEL else "admin123")
 
 APP_NAME = os.environ.get("APP_NAME", "SeatDesk")
-SINGLE_SHOW_TITLE = "Singing Show"
+SINGLE_SHOW_TITLE = "रैना बीती जाए..."
+SINGLE_SHOW_DATE = "2026-11-20"
+PREVIOUS_SHOW_TITLE = "Singing Show"
 MIN_SEATS, MAX_SEATS = 1, 50
 IST = timezone(timedelta(hours=5, minutes=30))
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -82,17 +84,26 @@ def parse_seats(raw):
 
 def get_single_show():
     show = db.query(
-        "SELECT * FROM shows WHERE title = ? ORDER BY show_date DESC, id DESC LIMIT 1",
-        (SINGLE_SHOW_TITLE,),
+        """SELECT * FROM shows WHERE title IN (?, ?)
+           ORDER BY CASE WHEN title = ? THEN 0 ELSE 1 END, show_date DESC, id DESC LIMIT 1""",
+        (SINGLE_SHOW_TITLE, PREVIOUS_SHOW_TITLE, SINGLE_SHOW_TITLE),
         one=True,
     )
     if show:
+        if show["title"] != SINGLE_SHOW_TITLE or show["show_date"] != SINGLE_SHOW_DATE:
+            db.execute(
+                "UPDATE shows SET title = ?, show_date = ? WHERE id = ?",
+                (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, show["id"]),
+            )
+            db.commit()
+            show["title"] = SINGLE_SHOW_TITLE
+            show["show_date"] = SINGLE_SHOW_DATE
         return show
 
     row = db.execute(
         """INSERT INTO shows (title, venue, show_date, show_time, notes, created_at)
            VALUES (?, '', ?, '', '', ?) RETURNING id""",
-        (SINGLE_SHOW_TITLE, date.today().isoformat(), now_utc()),
+        (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, now_utc()),
     )
     db.commit()
     return db.query("SELECT * FROM shows WHERE id = ?", (row["id"],), one=True)

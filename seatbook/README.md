@@ -1,11 +1,11 @@
-# SeatDesk — Singing Show seat booking (Flask)
+# SeatDesk — रैना बीती जाए... seat booking (Flask)
 
 An admin-only booking system for a single show (BookMyShow-style seat map).
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
 - Admin login (single admin account set by environment variables)
-- After login, the **Singing Show** seat map opens directly
+- After login, the **रैना बीती जाए...** seat map opens directly
 - Interactive seat map with zoom and fit controls
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
 - Click selected seats to remove them, then click other available seats to choose replacements
@@ -119,10 +119,12 @@ It is not populated automatically; the current login still uses
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` from the environment, and those values
 should never be stored as plaintext in the database.
 
-This project uses one fixed show, **Singing Show**. The first run creates it
-if it does not exist. Show creation and selection are not available in the app.
+This project uses one fixed show, **रैना बीती जाए...**, dated 20 November 2026.
+The first run creates it if it does not exist; an existing **Singing Show** entry
+is renamed and redated automatically, preserving its bookings. Show creation
+and selection are not available in the app.
 To start with an empty seat map, remove the old shows and bookings from the
-database, keeping only the intended Singing Show record.
+database, keeping only the intended show record.
 
 ## Step 5 — Making changes later
 

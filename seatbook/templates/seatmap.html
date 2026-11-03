@@ -9,7 +9,8 @@
       {{ show.show_date|nicedate }}{% if show.show_time %} · {{ show.show_time|nicetime }}{% endif %}{% if show.venue %} · {{ show.venue }}{% endif %}
     </p>
   </div>
-  <div class="head-actions">
+  <div class="head-actions event-branding">
+    <img class="event-brand-logo" src="{{ url_for('static', filename='swaramancha-logo.png') }}" alt="Swaramancha">
     <a class="btn btn-ghost" href="{{ url_for('bookings') }}">Bookings</a>
   </div>
 </div>
