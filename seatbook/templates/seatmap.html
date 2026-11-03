@@ -4,9 +4,12 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1>{{ show.title }}</h1>
-    <p class="muted">
-      {{ show.show_date|nicedate }}{% if show.show_time %} · {{ show.show_time|nicetime }}{% endif %}{% if show.venue %} · {{ show.venue }}{% endif %}
+    <h1 class="event-title">{{ show.title }}</h1>
+    <p class="event-meta">
+      {% if show.show_time %}<span>{{ show.show_time|nicetime }}</span>{% endif %}
+      {% if show.show_time %}<span class="event-separator">•</span>{% endif %}
+      <span>{{ show.show_date|nicedate }}</span>
+      {% if show.venue %}<span class="event-separator">•</span><span>{{ show.venue }}</span>{% endif %}
     </p>
   </div>
   <div class="head-actions event-branding">

@@ -45,6 +45,19 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; line-height: 1.2; }
 h1 { font-size: 28px; font-weight: 800; }
 h2 { font-size: 18px; font-weight: 700; }
 h3 { font-size: 16px; font-weight: 700; }
+.event-title {
+  font-family: "Noto Serif Devanagari", "Georgia", serif;
+  color: #f5d08b;
+  text-shadow: 0 2px 12px rgba(48, 20, 8, .14);
+}
+.event-title-small { font-size: 26px; }
+.event-meta {
+  font-family: "Noto Serif Devanagari", "Georgia", serif;
+  color: #f3cb7f;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.event-separator { margin: 0 6px; opacity: .75; }
 .muted { color: var(--muted); }
 .small { font-size: 12.5px; }
 .mono { font-family: var(--mono); font-size: 13px; letter-spacing: .02em; }

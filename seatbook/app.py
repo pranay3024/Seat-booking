@@ -48,6 +48,7 @@ VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
 APP_NAME = os.environ.get("APP_NAME", "SeatDesk")
 SINGLE_SHOW_TITLE = "रैना बीती जाए..."
 SINGLE_SHOW_DATE = "2026-11-20"
+SINGLE_SHOW_TIME = "20:15"
 PREVIOUS_SHOW_TITLE = "Singing Show"
 MIN_SEATS, MAX_SEATS = 1, 50
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -103,17 +104,19 @@ def get_single_show():
         if (
             show["title"] != SINGLE_SHOW_TITLE
             or show["show_date"] != SINGLE_SHOW_DATE
+            or show["show_time"] != SINGLE_SHOW_TIME
             or show["venue"] == "Test venue"
         ):
             db.execute(
-                """UPDATE shows SET title = ?, show_date = ?,
+                """UPDATE shows SET title = ?, show_date = ?, show_time = ?,
                    venue = CASE WHEN venue = ? THEN '' ELSE venue END
                    WHERE id = ?""",
-                (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, "Test venue", show["id"]),
+                (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, SINGLE_SHOW_TIME, "Test venue", show["id"]),
             )
             db.commit()
             show["title"] = SINGLE_SHOW_TITLE
             show["show_date"] = SINGLE_SHOW_DATE
+            show["show_time"] = SINGLE_SHOW_TIME
             if show["venue"] == "Test venue":
                 show["venue"] = ""
         return show
@@ -123,8 +126,8 @@ def get_single_show():
 
     row = db.execute(
         """INSERT INTO shows (title, venue, show_date, show_time, notes, created_at)
-           VALUES (?, '', ?, '', '', ?) RETURNING id""",
-        (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, now_utc()),
+           VALUES (?, '', ?, ?, '', ?) RETURNING id""",
+        (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, SINGLE_SHOW_TIME, now_utc()),
     )
     db.commit()
     return db.query("SELECT * FROM shows WHERE id = ?", (row["id"],), one=True)
