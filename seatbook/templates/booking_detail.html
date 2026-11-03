@@ -9,7 +9,9 @@
     </div>
     <div class="head-actions">
       <button class="btn btn-ghost" onclick="window.print()">Print ticket</button>
+      {% if IS_ADMIN %}
       <a class="btn btn-primary" href="{{ url_for('dashboard') }}">+ Another booking</a>
+      {% endif %}
     </div>
   </div>
 
@@ -47,7 +49,7 @@
     </div>
   </article>
 
-  {% if b.status == 'confirmed' %}
+  {% if IS_ADMIN and b.status == 'confirmed' %}
   <details class="card edit-card no-print">
     <summary>Edit customer details</summary>
     <form method="post" action="{{ url_for('booking_edit', code=b.code) }}">

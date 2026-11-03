@@ -11,11 +11,12 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 </head>
 <body class="{% block body_class %}{% endblock %}">
-  {% if session.get('admin') %}
+  {% if IS_AUTHENTICATED %}
   <header class="topbar">
     <a class="brand" href="{{ url_for('dashboard') }}">
       <span>{{ APP_NAME }}</span>
     </a>
+    {% if not IS_ADMIN %}<span class="muted small">View-only</span>{% endif %}
     <nav class="nav">
       <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint in ('dashboard', 'seat_map') }}">Seat map</a>
       <a href="{{ url_for('bookings') }}" class="{{ 'on' if request.endpoint in ('bookings', 'booking_detail') }}">Bookings</a>

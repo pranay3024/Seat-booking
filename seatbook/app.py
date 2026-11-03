@@ -1,5 +1,5 @@
 """
-SeatDesk — admin-only seat booking for a single auditorium.
+SeatDesk — seat booking for a single auditorium.
 Run locally:  python app.py   (then open http://127.0.0.1:5000)
 """
 import csv
@@ -42,6 +42,8 @@ app.config.update(
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "" if db.ON_VERCEL else "admin123")
+VIEWER_USERNAME = os.environ.get("VIEWER_USERNAME", "viewer")
+VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
 
 APP_NAME = os.environ.get("APP_NAME", "SeatDesk")
 SINGLE_SHOW_TITLE = "रैना बीती जाए..."
@@ -84,21 +86,40 @@ def parse_seats(raw):
 
 def get_single_show():
     show = db.query(
-        """SELECT * FROM shows WHERE title IN (?, ?)
-           ORDER BY CASE WHEN title = ? THEN 0 ELSE 1 END, show_date DESC, id DESC LIMIT 1""",
+        """SELECT s.*, COUNT(b.id) AS booking_count
+           FROM shows s LEFT JOIN bookings b ON b.show_id = s.id
+           WHERE s.title IN (?, ?)
+           GROUP BY s.id
+           ORDER BY COUNT(b.id) DESC,
+                    CASE WHEN s.title = ? THEN 0 ELSE 1 END,
+                    s.show_date DESC, s.id DESC
+           LIMIT 1""",
         (SINGLE_SHOW_TITLE, PREVIOUS_SHOW_TITLE, SINGLE_SHOW_TITLE),
         one=True,
     )
     if show:
-        if show["title"] != SINGLE_SHOW_TITLE or show["show_date"] != SINGLE_SHOW_DATE:
+        if current_role() == "viewer":
+            return show
+        if (
+            show["title"] != SINGLE_SHOW_TITLE
+            or show["show_date"] != SINGLE_SHOW_DATE
+            or show["venue"] == "Test venue"
+        ):
             db.execute(
-                "UPDATE shows SET title = ?, show_date = ? WHERE id = ?",
-                (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, show["id"]),
+                """UPDATE shows SET title = ?, show_date = ?,
+                   venue = CASE WHEN venue = ? THEN '' ELSE venue END
+                   WHERE id = ?""",
+                (SINGLE_SHOW_TITLE, SINGLE_SHOW_DATE, "Test venue", show["id"]),
             )
             db.commit()
             show["title"] = SINGLE_SHOW_TITLE
             show["show_date"] = SINGLE_SHOW_DATE
+            if show["venue"] == "Test venue":
+                show["venue"] = ""
         return show
+
+    if current_role() == "viewer":
+        abort(503, "The event has not been configured yet.")
 
     row = db.execute(
         """INSERT INTO shows (title, venue, show_date, show_time, notes, created_at)
@@ -188,6 +209,8 @@ def csrf_token():
 def inject_globals():
     return {
         "csrf_token": csrf_token,
+        "IS_ADMIN": current_role() == "admin",
+        "IS_AUTHENTICATED": current_role() in ("admin", "viewer"),
         "APP_NAME": APP_NAME,
         "PERSISTENT": db.PERSISTENT,
         "MAX_SEATS": MAX_SEATS,
@@ -206,32 +229,63 @@ def check_csrf():
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if not session.get("admin"):
+        if current_role() not in ("admin", "viewer"):
             return redirect(url_for("login", next=request.path))
         return view(*args, **kwargs)
     return wrapped
 
 
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if current_role() != "admin":
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+def current_role():
+    return session.get("role") or ("admin" if session.get("admin") else None)
+
+
 # ---------------------------------------------------------------- auth
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if session.get("admin"):
+    if current_role() in ("admin", "viewer"):
         return redirect(url_for("dashboard"))
     error = None
     if request.method == "POST":
-        if not ADMIN_PASSWORD:
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        role = None
+        if (
+            ADMIN_PASSWORD
+            and hmac.compare_digest(username, ADMIN_USERNAME)
+            and hmac.compare_digest(password, ADMIN_PASSWORD)
+        ):
+            role = "admin"
+        elif (
+            VIEWER_PASSWORD
+            and hmac.compare_digest(username, VIEWER_USERNAME)
+            and hmac.compare_digest(password, VIEWER_PASSWORD)
+        ):
+            role = "viewer"
+
+        if role:
+            session.clear()
+            session["_csrf"] = secrets.token_hex(16)
+            session.permanent = True
+            session["role"] = role
+            session["username"] = username
+            if role == "admin":
+                session["admin"] = username
+            nxt = request.args.get("next") or ""
+            return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("dashboard"))
+        if username == VIEWER_USERNAME and not VIEWER_PASSWORD:
+            error = "VIEWER_PASSWORD is not set on the server. Add it in your hosting environment variables."
+        elif username == ADMIN_USERNAME and not ADMIN_PASSWORD:
             error = "ADMIN_PASSWORD is not set on the server. Add it in Vercel → Settings → Environment Variables."
         else:
-            u = request.form.get("username", "")
-            p = request.form.get("password", "")
-            if hmac.compare_digest(u, ADMIN_USERNAME) and hmac.compare_digest(p, ADMIN_PASSWORD):
-                token = session.get("_csrf")
-                session.clear()
-                session["_csrf"] = token
-                session.permanent = True
-                session["admin"] = u
-                nxt = request.args.get("next") or ""
-                return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("dashboard"))
             error = "Wrong username or password."
     return render_template("login.html", error=error)
 
@@ -277,6 +331,7 @@ def seat_map(show_id):
 
 @app.route("/shows/<int:show_id>/book", methods=["POST"])
 @login_required
+@admin_required
 def book(show_id):
     show = get_show_or_404(show_id)
     f = request.form
@@ -364,6 +419,7 @@ def bookings():
 
 @app.route("/bookings.csv")
 @login_required
+@admin_required
 def bookings_csv():
     rows = _filtered_bookings(request.args)
     buf = io.StringIO()
@@ -389,6 +445,7 @@ def booking_detail(code):
 
 @app.route("/bookings/<code>/edit", methods=["POST"])
 @login_required
+@admin_required
 def booking_edit(code):
     b = get_booking_or_404(code)
     f = request.form
@@ -409,6 +466,7 @@ def booking_edit(code):
 
 @app.route("/bookings/<code>/cancel", methods=["POST"])
 @login_required
+@admin_required
 def booking_cancel(code):
     b = get_booking_or_404(code)
     if b["status"] != "cancelled":

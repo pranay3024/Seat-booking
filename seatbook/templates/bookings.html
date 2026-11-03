@@ -7,7 +7,7 @@
     <h1>Bookings</h1>
     <p class="muted">{{ rows|length }} result{{ 's' if rows|length != 1 }}</p>
   </div>
-  <a class="btn btn-ghost" href="{{ url_for('bookings_csv', **args.to_dict()) }}">Export CSV</a>
+  {% if IS_ADMIN %}<a class="btn btn-ghost" href="{{ url_for('bookings_csv', **args.to_dict()) }}">Export CSV</a>{% endif %}
 </div>
 
 <form class="filters card" method="get">
@@ -43,8 +43,10 @@
 {% else %}
 <div class="empty card">
   <h2>No bookings found</h2>
-  <p class="muted">Select seats on the floor plan and enter customer details to make a booking.</p>
+  <p class="muted">{% if IS_ADMIN %}Select seats on the floor plan and enter customer details to make a booking.{% else %}There are no bookings matching this filter.{% endif %}</p>
+  {% if IS_ADMIN %}
   <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to seat map</a>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}

@@ -1,10 +1,10 @@
 # SeatDesk — रैना बीती जाए... seat booking (Flask)
 
-An admin-only booking system for a single show (BookMyShow-style seat map).
+An admin and read-only viewer booking system for a single show (BookMyShow-style seat map).
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
-- Admin login (single admin account set by environment variables)
+- Separate admin and read-only viewer logins, configured with environment variables
 - After login, the **रैना बीती जाए...** seat map opens directly
 - Interactive seat map with zoom and fit controls
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
@@ -89,6 +89,8 @@ If `origin` is already configured, skip the `git remote add` command. `.gitignor
    |---|---|
    | `ADMIN_USERNAME` | the login name you want, e.g. `admin` |
    | `ADMIN_PASSWORD` | a strong password |
+   | `VIEWER_USERNAME` | read-only login name, e.g. `viewer` |
+   | `VIEWER_PASSWORD` | a strong password for the read-only login |
    | `SECRET_KEY` | a long random string (see below) |
    | `APP_NAME` | *(optional)* e.g. `Rang Mandir Bookings` |
 
@@ -111,6 +113,10 @@ In Vercel → your project → **Settings → Environment Variables**, set:
 Keep the connection string private. Do not put it in source code or commit it to GitHub. Set the other app secrets from Step 3 as environment variables too. Redeploy after saving the variables; the tables are created automatically when the app first connects.
 
 The project URL for this app is `https://hezbwvzsbbdquxfvzfug.supabase.co`; it identifies the project but is not used as `DATABASE_URL`. The yellow warning banner disappears once the database connection is configured.
+
+The viewer can see the seat map and booking details, but cannot create or edit
+bookings, cancel bookings, or export the bookings CSV. The server enforces this
+restriction even if the viewer manually submits a request.
 
 For local development, the app reads `DATABASE_URL` from the repository-root `.env`. Leave it unset to continue using the local SQLite database.
 

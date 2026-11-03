@@ -55,8 +55,10 @@
                     {%- set lab = r.row ~ n -%}
                     {%- if lab in booked -%}
                       <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ booked[lab].customer_name }} · {{ booked[lab].phone }}" aria-label="Seat {{ lab }}, booked by {{ booked[lab].customer_name }}, phone {{ booked[lab].phone }}">{{ n }}</a>
-                    {%- else -%}
+                    {%- elif IS_ADMIN -%}
                       <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" data-block="{{ block_index }}" title="{{ lab }}">{{ n }}</button>
+                    {%- else -%}
+                      <span class="seat{{ ' balc' if sec.key == 'balcony' }}" title="Available seat {{ lab }}" aria-label="Available seat {{ lab }}">{{ n }}</span>
                     {%- endif -%}
                   {%- endfor -%}
                 </div>
@@ -70,6 +72,7 @@
     </div>
   </section>
 
+  {% if IS_ADMIN %}
   <aside class="card panel" id="panel">
     <form method="post" action="{{ url_for('book', show_id=show.id) }}" id="bookForm" autocomplete="off">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -117,15 +120,24 @@
       <button class="btn btn-primary btn-block" id="submitBtn" type="submit" disabled>Select seats to book</button>
     </form>
   </aside>
+  {% else %}
+  <aside class="card panel" id="panel">
+    <h2>View-only access</h2>
+    <p class="muted">You can see seat availability and booking details. Booking changes are disabled.</p>
+  </aside>
+  {% endif %}
 </div>
 
+{% if IS_ADMIN %}
 <div class="mobile-bar" id="mobileBar">
   <span><b id="mCount">0</b> seat(s) selected</span>
   <a href="#panel" class="btn btn-primary btn-sm">Booking details ↓</a>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+{% if IS_ADMIN %}
 <script>
   window.SEATMAP = {
     max: {{ MAX_SEATS }},
@@ -134,4 +146,5 @@
   };
 </script>
 <script src="{{ url_for('static', filename='seatmap.js', v='seat-count-block-rows') }}"></script>
+{% endif %}
 {% endblock %}
