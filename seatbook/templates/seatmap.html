@@ -4,11 +4,7 @@
 {% block content %}
 <div class="page-head">
   <div>
-    <h1 class="event-title" aria-label="{{ show.title }}">
-      <span class="event-word">रैना</span>
-      <span class="event-word">बीती</span>
-      <span class="event-word">जाए...</span>
-    </h1>
+    <img class="event-title-art" src="{{ url_for('static', filename='event-title.png') }}" alt="{{ show.title }}">
     <p class="event-meta">
       <span>{{ show.show_date|nicedate }}</span>
       {% if show.show_time %}<span class="event-separator">•</span><span>{{ show.show_time|nicetime }}</span>{% endif %}
