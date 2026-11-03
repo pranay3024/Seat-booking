@@ -92,11 +92,10 @@
         </select>
       </label>
 
-      <div class="chips" id="chips"><p class="muted small" id="chipsEmpty">Choose a count, then click an available seat.</p></div>
+      <div class="chips" id="chips"></div>
       <button type="button" class="link-btn" id="clearSel" hidden>Clear selection</button>
 
       <fieldset class="details">
-        <legend>Customer details</legend>
         <div class="row2 booking-customer-fields">
           <label class="field"><span>Full name *</span>
             <input name="customer_name" required value="{{ form.get('customer_name', '') }}" placeholder="Name on the booking"></label>

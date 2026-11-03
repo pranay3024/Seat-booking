@@ -85,7 +85,6 @@
     var mCountEl = $('mCount');
     var mobileBarEl = $('mobileBar');
     var chips = $('chips');
-    var chipsEmpty = $('chipsEmpty');
     var clearSel = $('clearSel');
     var submitBtn = $('submitBtn');
 
@@ -99,10 +98,6 @@
 
     if (chips) {
       chips.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
-    }
-    if (chipsEmpty) {
-      chipsEmpty.hidden = sorted.length > 0;
-      chipsEmpty.textContent = sorted.length ? '' : 'Click an available seat to select your group.';
     }
     if (clearSel) clearSel.hidden = sorted.length === 0;
 
