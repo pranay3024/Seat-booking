@@ -105,19 +105,25 @@
 
       <fieldset class="details">
         <legend>Customer details</legend>
-        <label class="field"><span>Full name *</span>
-          <input name="customer_name" required value="{{ form.get('customer_name', '') }}" placeholder="Name on the booking"></label>
         <div class="row2">
+          <label class="field"><span>Full name *</span>
+            <input name="customer_name" required value="{{ form.get('customer_name', '') }}" placeholder="Name on the booking"></label>
           <label class="field"><span>Phone *</span>
             <input name="phone" type="tel" inputmode="tel" required value="{{ form.get('phone', '') }}" placeholder="98xxxxxxxx"></label>
+        </div>
+      </fieldset>
+
+      <details class="additional-details">
+        <summary>Additional details (optional)</summary>
+        <div class="row2">
+          <label class="field"><span>Email</span>
+            <input name="email" type="email" value="{{ form.get('email', '') }}" placeholder="optional"></label>
           <label class="field"><span>City</span>
             <input name="city" value="{{ form.get('city', '') }}"></label>
         </div>
-        <label class="field"><span>Email</span>
-          <input name="email" type="email" value="{{ form.get('email', '') }}" placeholder="optional"></label>
         <label class="field"><span>Notes</span>
           <textarea name="notes" rows="2" placeholder="Group name, special requests…">{{ form.get('notes', '') }}</textarea></label>
-      </fieldset>
+      </details>
 
       <button class="btn btn-primary btn-block" id="submitBtn" type="submit" disabled>Select seats to book</button>
     </form>
