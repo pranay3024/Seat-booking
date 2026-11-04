@@ -10,6 +10,7 @@ The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Bal
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
 - Click selected seats to remove them, then click other available seats to choose replacements
 - Book with customer details (name, phone, email, city, notes) — no prices or payments
+- Track hard-copy pass delivery for each booking from the bookings list
 - Double-booking is impossible (database-level lock on each seat)
 - Hover over any grey (booked) seat to see the customer's name and phone number; click it to open that booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
@@ -124,6 +125,8 @@ The database schema also creates an `admins` table with a `password_hash` column
 It is not populated automatically; the current login still uses
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` from the environment, and those values
 should never be stored as plaintext in the database.
+Existing databases automatically gain a hard-copy delivery status column when
+the app starts; bookings begin as not delivered.
 
 This project uses one fixed show, **रैना बीती जाए...**, dated 20 November 2026.
 The first run creates it if it does not exist; an existing **Singing Show** entry

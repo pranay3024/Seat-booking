@@ -25,7 +25,7 @@
 <div class="card table-card">
   <table class="table">
     <thead>
-      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Booked</th></tr>
+      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Hard copy delivered</th><th>Booked</th></tr>
     </thead>
     <tbody>
       {% for r in rows %}
@@ -34,6 +34,18 @@
         <td><b>{{ r.customer_name }}</b><br><span class="muted small">{{ r.phone }}</span></td>
         <td><span class="pill">{{ r.num_seats }}</span> <span class="small seats-short">{{ r.seats.replace(',', ', ')|truncate(60) }}</span></td>
         <td><span class="status status-{{ r.status }}">{{ r.status|capitalize }}</span></td>
+        <td>
+          {% if IS_ADMIN and not r.hard_copy_delivered %}
+          <form method="post" action="{{ url_for('booking_mark_hard_copy_delivered', code=r.code) }}" onclick="event.stopPropagation()">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="delivery-button" type="submit" aria-label="Mark hard copy delivered for booking {{ r.code }}">No</button>
+          </form>
+          {% else %}
+          <span class="delivery-status {{ 'delivery-status-yes' if r.hard_copy_delivered else 'delivery-status-no' }}">
+            {{ 'Yes' if r.hard_copy_delivered else 'No' }}
+          </span>
+          {% endif %}
+        </td>
         <td class="small muted">{{ r.created_at|ist }}</td>
       </tr>
       {% endfor %}

@@ -312,6 +312,11 @@ button.seat.balc:hover { background: var(--balc-soft); }
 .status { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 99px; }
 .status-confirmed { background: var(--stall-soft); color: var(--stall); }
 .status-cancelled { background: #f1efea; color: var(--muted); }
+.delivery-button { min-width: 48px; padding: 4px 10px; border: 1px solid #f0c2ca; border-radius: 99px; background: #fff; color: var(--danger); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.delivery-button:hover { background: #fff4f5; }
+.delivery-status { display: inline-block; min-width: 48px; padding: 4px 10px; border-radius: 99px; text-align: center; font-size: 12px; font-weight: 800; }
+.delivery-status-yes { background: var(--stall-soft); color: var(--stall); }
+.delivery-status-no { background: #f1efea; color: var(--muted); }
 
 /* ---------- ticket ---------- */
 .ticket { display: grid; grid-template-columns: 1fr 130px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; position: relative; }
