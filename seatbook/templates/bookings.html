@@ -7,7 +7,13 @@
     <h1>Bookings</h1>
     <p class="muted">{{ rows|length }} result{{ 's' if rows|length != 1 }}</p>
   </div>
-  {% if IS_ADMIN %}<a class="btn btn-ghost" href="{{ url_for('bookings_csv', **args.to_dict()) }}">Export CSV</a>{% endif %}
+{% if IS_ADMIN %}
+<div class="head-actions">
+  <a class="btn btn-ghost" href="{{ url_for('bookings_csv', **args.to_dict()) }}">Export CSV</a>
+  <a class="btn btn-ghost" href="{{ url_for('booking_customer_names_csv', delivered='yes') }}">Export delivered names</a>
+  <a class="btn btn-ghost" href="{{ url_for('booking_customer_names_csv', delivered='no') }}">Export not-delivered names</a>
+</div>
+{% endif %}
 </div>
 
 <form class="filters card" method="get">
@@ -36,7 +42,9 @@
         <td><span class="status status-{{ r.status }}">{{ r.status|capitalize }}</span></td>
         <td>
           {% if IS_ADMIN and not r.hard_copy_delivered %}
-          <form method="post" action="{{ url_for('booking_mark_hard_copy_delivered', code=r.code) }}" onclick="event.stopPropagation()">
+          <form method="post" action="{{ url_for('booking_mark_hard_copy_delivered', code=r.code) }}"
+                onclick="event.stopPropagation()"
+                onsubmit="return confirm('Confirm that the hard copy for booking {{ r.code }} has been delivered?');">
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
             <button class="delivery-button" type="submit" aria-label="Mark hard copy delivered for booking {{ r.code }}">No</button>
           </form>
