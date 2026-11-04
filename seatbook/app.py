@@ -168,6 +168,23 @@ def booked_map(show_id):
     return booked
 
 
+def clear_stale_seat_locks(show_id, seats):
+    placeholders = ", ".join("?" for _ in seats)
+    rows = db.query(
+        f"""SELECT bs.seat, bs.booking_id, b.status, b.seats
+            FROM booked_seats bs
+            LEFT JOIN bookings b ON b.id = bs.booking_id AND b.show_id = bs.show_id
+            WHERE bs.show_id = ? AND bs.seat IN ({placeholders})""",
+        (show_id, *seats),
+    )
+    for row in rows:
+        if row["status"] != "confirmed" or row["seat"] not in parse_seats(row["seats"]):
+            db.execute(
+                "DELETE FROM booked_seats WHERE show_id = ? AND seat = ? AND booking_id = ?",
+                (show_id, row["seat"], row["booking_id"]),
+            )
+
+
 # ---------------------------------------------------------------- template filters
 @app.template_filter("ist")
 def ist(ts):
@@ -371,8 +388,15 @@ def book(show_id):
 
     seats.sort(key=seat_sort_key)
 
+    taken = booked_map(show_id)
+    clash = [seat for seat in seats if seat in taken]
+    if clash:
+        flash("Already booked: " + ", ".join(clash) + ". Pick other seats.", "error")
+        return _render_map(show, form=f, preselect=[s for s in seats if s not in taken], status=409)
+
     code = new_code()
     try:
+        clear_stale_seat_locks(show_id, seats)
         row = db.execute(
             """INSERT INTO bookings (code, show_id, customer_name, phone, email, city, num_seats, seats,
                                      notes, status, created_at)
@@ -389,6 +413,8 @@ def book(show_id):
         db.rollback()
         taken = set(booked_map(show_id))
         clash = [s for s in seats if s in taken]
+        if not clash:
+            raise
         flash("Just booked by someone else: " + ", ".join(clash) + ". Pick other seats.", "error")
         return _render_map(show, form=f, preselect=[s for s in seats if s not in taken], status=409)
 
