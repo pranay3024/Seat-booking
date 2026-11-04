@@ -298,6 +298,8 @@ button.seat.balc:hover { background: var(--balc-soft); }
 
 /* ---------- bookings table ---------- */
 .filters { display: grid; grid-template-columns: 1fr 260px 160px auto auto; gap: 10px; align-items: center; padding: 12px; margin-bottom: 16px; }
+.copy-feedback { margin: -8px 0 12px; color: var(--muted); font-size: 13px; }
+.copy-fallback { display: block; min-height: 120px; margin: 0 0 16px; font-family: var(--mono); }
 .table-card { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }

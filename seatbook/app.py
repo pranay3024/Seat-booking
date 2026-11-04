@@ -445,7 +445,26 @@ def _filtered_bookings(args):
 @login_required
 def bookings():
     rows = _filtered_bookings(request.args)
-    return render_template("bookings.html", rows=rows, args=request.args)
+    show = get_single_show()
+    delivered_names = db.query(
+        """SELECT customer_name FROM bookings
+           WHERE show_id = ? AND hard_copy_delivered = TRUE
+           ORDER BY LOWER(customer_name), created_at""",
+        (show["id"],),
+    )
+    pending_names = db.query(
+        """SELECT customer_name FROM bookings
+           WHERE show_id = ? AND hard_copy_delivered = FALSE
+           ORDER BY LOWER(customer_name), created_at""",
+        (show["id"],),
+    )
+    return render_template(
+        "bookings.html",
+        rows=rows,
+        args=request.args,
+        delivered_names=[row["customer_name"] for row in delivered_names],
+        pending_names=[row["customer_name"] for row in pending_names],
+    )
 
 
 @app.route("/bookings.csv")
@@ -465,35 +484,6 @@ def bookings_csv():
         "﻿" + buf.getvalue(),
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename=bookings-{date.today().isoformat()}.csv"},
-    )
-
-
-@app.route("/bookings/customer-names.csv")
-@login_required
-@admin_required
-def booking_customer_names_csv():
-    delivered = request.args.get("delivered")
-    if delivered not in ("yes", "no"):
-        abort(400, "Choose whether to export delivered or not-delivered bookings.")
-
-    show = get_single_show()
-    rows = db.query(
-        """SELECT customer_name FROM bookings
-           WHERE show_id = ? AND hard_copy_delivered = ?
-           ORDER BY LOWER(customer_name), created_at""",
-        (show["id"], delivered == "yes"),
-    )
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-    writer.writerow(["Customer name"])
-    writer.writerows([row["customer_name"]] for row in rows)
-    return Response(
-        "﻿" + buf.getvalue(),
-        mimetype="text/csv",
-        headers={
-            "Content-Disposition":
-                f"attachment; filename=customer-names-{delivered}-delivered-{date.today().isoformat()}.csv"
-        },
     )
 
 

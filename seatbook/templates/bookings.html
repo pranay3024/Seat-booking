@@ -9,12 +9,15 @@
   </div>
 {% if IS_ADMIN %}
 <div class="head-actions">
-  <a class="btn btn-ghost" href="{{ url_for('bookings_csv', **args.to_dict()) }}">Export CSV</a>
-  <a class="btn btn-ghost" href="{{ url_for('booking_customer_names_csv', delivered='yes') }}">Export delivered names</a>
-  <a class="btn btn-ghost" href="{{ url_for('booking_customer_names_csv', delivered='no') }}">Export not-delivered names</a>
+  <button class="btn btn-ghost" type="button" data-copy-names="delivered">Copy delivered names</button>
+  <button class="btn btn-ghost" type="button" data-copy-names="pending">Copy not-delivered names</button>
 </div>
 {% endif %}
 </div>
+{% if IS_ADMIN %}
+<div class="copy-feedback" id="copyFeedback" role="status" aria-live="polite"></div>
+<textarea class="copy-fallback" id="copyFallback" aria-label="Customer names to copy" readonly hidden></textarea>
+{% endif %}
 
 <form class="filters card" method="get">
   <input name="q" value="{{ args.get('q', '') }}" placeholder="Search name, phone, email or booking code" aria-label="Search">
@@ -68,5 +71,50 @@
   <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to seat map</a>
   {% endif %}
 </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if IS_ADMIN %}
+<script>
+  (function () {
+    var names = {
+      delivered: {{ delivered_names|tojson }},
+      pending: {{ pending_names|tojson }}
+    };
+    var feedback = document.getElementById('copyFeedback');
+    var fallback = document.getElementById('copyFallback');
+
+    function showManualCopy(text) {
+      fallback.hidden = false;
+      fallback.value = text;
+      fallback.focus();
+      fallback.select();
+      feedback.textContent = 'Clipboard access is unavailable. The names are selected below; copy them manually.';
+    }
+
+    document.querySelectorAll('[data-copy-names]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var list = names[button.dataset.copyNames] || [];
+        if (!list.length) {
+          feedback.textContent = 'There are no names in this list.';
+          return;
+        }
+
+        var text = list.join('\n');
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () {
+            fallback.hidden = true;
+            feedback.textContent = list.length + ' name(s) copied to clipboard.';
+          }).catch(function () {
+            showManualCopy(text);
+          });
+        } else {
+          showManualCopy(text);
+        }
+      });
+    });
+  })();
+</script>
 {% endif %}
 {% endblock %}
