@@ -440,9 +440,6 @@ def _filtered_bookings(args):
         sql += """ AND (LOWER(b.customer_name) LIKE ? OR LOWER(b.phone) LIKE ?
                    OR LOWER(b.code) LIKE ? OR LOWER(COALESCE(b.email, '')) LIKE ?)"""
         params += [like] * 4
-    if args.get("status") in ("confirmed", "cancelled"):
-        sql += " AND b.status = ?"
-        params.append(args["status"])
     hard_copy_status = args.get("hard_copy")
     if hard_copy_status == "delivered":
         sql += " AND b.hard_copy_delivered = TRUE"
@@ -474,11 +471,11 @@ def bookings():
         rows=rows,
         args=request.args,
         delivered_names=[
-            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]} tickets booked'
+            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]}'
             for row in delivered_names
         ],
         pending_names=[
-            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]} tickets booked'
+            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]}'
             for row in pending_names
         ],
     )

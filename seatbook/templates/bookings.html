@@ -21,11 +21,6 @@
 
 <form class="filters card" method="get">
   <input name="q" value="{{ args.get('q', '') }}" placeholder="Search name, phone, email or booking code" aria-label="Search">
-  <select name="status" aria-label="Status">
-    <option value="">Any status</option>
-    <option value="confirmed" {{ 'selected' if args.get('status') == 'confirmed' }}>Confirmed</option>
-    <option value="cancelled" {{ 'selected' if args.get('status') == 'cancelled' }}>Cancelled</option>
-  </select>
   <select name="hard_copy" aria-label="Hard copy delivery">
     <option value="">Any hard copy status</option>
     <option value="delivered" {{ 'selected' if args.get('hard_copy') == 'delivered' }}>Hard copy delivered</option>
