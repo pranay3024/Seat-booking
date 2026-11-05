@@ -12,13 +12,14 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if IS_AUTHENTICATED %}
+  {% set seat_map_url = url_for('admin_dashboard') if IS_ADMIN else url_for('dashboard') %}
   <header class="topbar">
-    <a class="brand" href="{{ url_for('dashboard') }}">
+    <a class="brand" href="{{ seat_map_url }}">
       <span>{{ APP_NAME }}</span>
     </a>
     {% if not IS_ADMIN %}<span class="muted small">View-only</span>{% endif %}
     <nav class="nav">
-      <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint in ('dashboard', 'seat_map') }}">Seat map</a>
+      <a href="{{ seat_map_url }}" class="{{ 'on' if request.endpoint in ('dashboard', 'admin_dashboard', 'seat_map') }}">Seat map</a>
       <a href="{{ url_for('bookings') }}" class="{{ 'on' if request.endpoint in ('bookings', 'booking_detail') }}">Bookings</a>
     </nav>
     <div class="top-actions">

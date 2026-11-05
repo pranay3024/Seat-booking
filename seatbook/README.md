@@ -4,7 +4,7 @@ An admin and read-only viewer booking system for a single show (BookMyShow-style
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
-- Admin login for managing bookings; the read-only seat map opens directly from its link without signing in
+- Admin login at `/login` for managing bookings; the read-only seat map opens directly from the site link without signing in
 - Optional read-only viewer login, configured with environment variables
 - Interactive seat map with zoom and fit controls
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles

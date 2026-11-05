@@ -4,13 +4,13 @@
 <div class="narrow wide-narrow">
   <div class="page-head no-print">
     <div>
-      <a class="back" href="{{ url_for('dashboard') }}">← Back to seat map</a>
+      <a class="back" href="{{ url_for('admin_dashboard') if IS_ADMIN else url_for('dashboard') }}">← Back to seat map</a>
       <h1>Booking {{ b.code }}</h1>
     </div>
     <div class="head-actions">
       <button class="btn btn-ghost" onclick="window.print()">Print ticket</button>
       {% if IS_ADMIN %}
-      <a class="btn btn-primary" href="{{ url_for('dashboard') }}">+ Another booking</a>
+      <a class="btn btn-primary" href="{{ url_for('admin_dashboard') }}">+ Another booking</a>
       {% endif %}
     </div>
   </div>

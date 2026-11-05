@@ -99,7 +99,7 @@ def get_single_show():
         one=True,
     )
     if show:
-        if current_role() != "admin":
+        if current_role() != "admin" or request.endpoint in ("dashboard", "seat_map"):
             return show
         if (
             show["title"] != SINGLE_SHOW_TITLE
@@ -121,7 +121,7 @@ def get_single_show():
                 show["venue"] = ""
         return show
 
-    if current_role() != "admin":
+    if current_role() != "admin" or request.endpoint in ("dashboard", "seat_map"):
         abort(503, "The event has not been configured yet.")
 
     row = db.execute(
@@ -153,8 +153,10 @@ def get_booking_or_404(code):
     return b
 
 
-def booked_map(show_id):
-    if current_role() == "admin":
+def booked_map(show_id, include_details=None):
+    if include_details is None:
+        include_details = current_role() == "admin"
+    if include_details:
         rows = db.query(
             """SELECT b.seats, b.code, b.customer_name, b.phone
                FROM bookings b
@@ -257,7 +259,7 @@ def check_csrf():
         token = request.form.get("_csrf", "")
         if not token or not hmac.compare_digest(token, session.get("_csrf", "")):
             if request.endpoint == "login" and current_role() in ("admin", "viewer"):
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("admin_dashboard"))
             abort(400, "Form expired — please go back, refresh and try again.")
 
 
@@ -287,7 +289,7 @@ def current_role():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_role() in ("admin", "viewer"):
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("admin_dashboard"))
     error = None
     if request.method == "POST":
         username = request.form.get("username", "")
@@ -315,7 +317,7 @@ def login():
             if role == "admin":
                 session["admin"] = username
             nxt = request.args.get("next") or ""
-            return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("dashboard"))
+            return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("admin_dashboard"))
         if username == VIEWER_USERNAME and not VIEWER_PASSWORD:
             error = "VIEWER_PASSWORD is not set on the server. Add it in your hosting environment variables."
         elif username == ADMIN_USERNAME and not ADMIN_PASSWORD:
@@ -334,12 +336,18 @@ def logout():
 # ---------------------------------------------------------------- dashboard
 @app.route("/")
 def dashboard():
-    return _render_map(get_single_show())
+    return _render_map(get_single_show(), public_view=True)
 
 
 # ---------------------------------------------------------------- seat map + booking
-def _render_map(show, form=None, preselect=None, status=200):
-    booked = booked_map(show["id"])
+@app.route("/admin")
+@login_required
+def admin_dashboard():
+    return _render_map(get_single_show())
+
+
+def _render_map(show, form=None, preselect=None, status=200, public_view=False):
+    booked = booked_map(show["id"], include_details=not public_view and current_role() == "admin")
     return render_template(
         "seatmap.html",
         show=show,
@@ -349,12 +357,14 @@ def _render_map(show, form=None, preselect=None, status=200):
         form=form or {},
         preselect=preselect or [],
         min_seats=MIN_SEATS,
+        IS_ADMIN=current_role() == "admin" and not public_view,
+        IS_AUTHENTICATED=current_role() in ("admin", "viewer") and not public_view,
     ), status
 
 
 @app.route("/shows/<int:show_id>")
 def seat_map(show_id):
-    return _render_map(get_show_or_404(show_id))
+    return _render_map(get_show_or_404(show_id), public_view=True)
 
 
 @app.route("/shows/<int:show_id>/book", methods=["POST"])

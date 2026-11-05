@@ -68,7 +68,7 @@
   <h2>No bookings found</h2>
   <p class="muted">{% if IS_ADMIN %}Select seats on the floor plan and enter customer details to make a booking.{% else %}There are no bookings matching this filter.{% endif %}</p>
   {% if IS_ADMIN %}
-  <a class="btn btn-primary" href="{{ url_for('dashboard') }}">Go to seat map</a>
+  <a class="btn btn-primary" href="{{ url_for('admin_dashboard') }}">Go to seat map</a>
   {% endif %}
 </div>
 {% endif %}
