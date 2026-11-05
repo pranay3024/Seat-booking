@@ -99,7 +99,7 @@ def get_single_show():
         one=True,
     )
     if show:
-        if current_role() == "viewer":
+        if current_role() != "admin":
             return show
         if (
             show["title"] != SINGLE_SHOW_TITLE
@@ -121,7 +121,7 @@ def get_single_show():
                 show["venue"] = ""
         return show
 
-    if current_role() == "viewer":
+    if current_role() != "admin":
         abort(503, "The event has not been configured yet.")
 
     row = db.execute(
@@ -154,12 +154,20 @@ def get_booking_or_404(code):
 
 
 def booked_map(show_id):
-    rows = db.query(
-        """SELECT b.seats, b.code, b.customer_name, b.phone
-           FROM bookings b
-           WHERE b.show_id = ? AND b.status = 'confirmed'""",
-        (show_id,),
-    )
+    if current_role() == "admin":
+        rows = db.query(
+            """SELECT b.seats, b.code, b.customer_name, b.phone
+               FROM bookings b
+               WHERE b.show_id = ? AND b.status = 'confirmed'""",
+            (show_id,),
+        )
+    else:
+        rows = db.query(
+            """SELECT b.seats
+               FROM bookings b
+               WHERE b.show_id = ? AND b.status = 'confirmed'""",
+            (show_id,),
+        )
     booked = {}
     for row in rows:
         for seat in parse_seats(row["seats"]):
@@ -325,7 +333,6 @@ def logout():
 
 # ---------------------------------------------------------------- dashboard
 @app.route("/")
-@login_required
 def dashboard():
     return _render_map(get_single_show())
 
@@ -346,7 +353,6 @@ def _render_map(show, form=None, preselect=None, status=200):
 
 
 @app.route("/shows/<int:show_id>")
-@login_required
 def seat_map(show_id):
     return _render_map(get_show_or_404(show_id))
 
@@ -437,6 +443,11 @@ def _filtered_bookings(args):
     if args.get("status") in ("confirmed", "cancelled"):
         sql += " AND b.status = ?"
         params.append(args["status"])
+    hard_copy_status = args.get("hard_copy")
+    if hard_copy_status == "delivered":
+        sql += " AND b.hard_copy_delivered = TRUE"
+    elif hard_copy_status == "undelivered":
+        sql += " AND b.hard_copy_delivered = FALSE"
     sql += " ORDER BY b.created_at DESC LIMIT 1000"
     return db.query(sql, params)
 
@@ -447,13 +458,13 @@ def bookings():
     rows = _filtered_bookings(request.args)
     show = get_single_show()
     delivered_names = db.query(
-        """SELECT customer_name FROM bookings
+        """SELECT customer_name, phone, num_seats FROM bookings
            WHERE show_id = ? AND hard_copy_delivered = TRUE
            ORDER BY LOWER(customer_name), created_at""",
         (show["id"],),
     )
     pending_names = db.query(
-        """SELECT customer_name FROM bookings
+        """SELECT customer_name, phone, num_seats FROM bookings
            WHERE show_id = ? AND hard_copy_delivered = FALSE
            ORDER BY LOWER(customer_name), created_at""",
         (show["id"],),
@@ -462,8 +473,14 @@ def bookings():
         "bookings.html",
         rows=rows,
         args=request.args,
-        delivered_names=[row["customer_name"] for row in delivered_names],
-        pending_names=[row["customer_name"] for row in pending_names],
+        delivered_names=[
+            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]} tickets booked'
+            for row in delivered_names
+        ],
+        pending_names=[
+            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]} tickets booked'
+            for row in pending_names
+        ],
     )
 
 

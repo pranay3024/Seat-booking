@@ -4,15 +4,15 @@ An admin and read-only viewer booking system for a single show (BookMyShow-style
 The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Balcony S–W (258 seats)** — **1,001 seats** in 4 blocks per row.
 
 **What it does**
-- Separate admin and read-only viewer logins, configured with environment variables
-- After login, the **रैना बीती जाए...** seat map opens directly
+- Admin login for managing bookings; the read-only seat map opens directly from its link without signing in
+- Optional read-only viewer login, configured with environment variables
 - Interactive seat map with zoom and fit controls
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
 - Click selected seats to remove them, then click other available seats to choose replacements
 - Book with customer details (name, phone, email, city, notes) — no prices or payments
 - Track hard-copy pass delivery for each booking from the bookings list
 - Double-booking is impossible (database-level lock on each seat)
-- Hover over any grey (booked) seat to see the customer's name and phone number; click it to open that booking
+- Booked seats do not reveal customer details to public visitors; admins can hover and click to open a booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
 - Bookings list with search, filter by status, **CSV export** (opens in Excel)
 - Works on phone and desktop
@@ -90,8 +90,8 @@ If `origin` is already configured, skip the `git remote add` command. `.gitignor
    |---|---|
    | `ADMIN_USERNAME` | the login name you want, e.g. `admin` |
    | `ADMIN_PASSWORD` | a strong password |
-   | `VIEWER_USERNAME` | read-only login name, e.g. `viewer` |
-   | `VIEWER_PASSWORD` | a strong password for the read-only login |
+   | `VIEWER_USERNAME` | *(optional)* read-only login name, e.g. `viewer` |
+   | `VIEWER_PASSWORD` | *(optional)* a strong password for the read-only login |
    | `SECRET_KEY` | a long random string (see below) |
    | `APP_NAME` | *(optional)* e.g. `Rang Mandir Bookings` |
 
@@ -115,9 +115,12 @@ Keep the connection string private. Do not put it in source code or commit it to
 
 The project URL for this app is `https://hezbwvzsbbdquxfvzfug.supabase.co`; it identifies the project but is not used as `DATABASE_URL`. The yellow warning banner disappears once the database connection is configured.
 
-The viewer can see the seat map and booking details, but cannot create or edit
-bookings, cancel bookings, or export the bookings CSV. The server enforces this
-restriction even if the viewer manually submits a request.
+The seat map is public and read-only: visitors do not need a username or password,
+and booked seats do not reveal customer details. Booking lists and individual
+booking details still require a configured viewer or admin login. Viewers cannot
+create or edit bookings, mark hard-copy passes delivered, cancel bookings, or
+export the bookings CSV. The server enforces these restrictions even if the
+viewer manually submits a request.
 
 For local development, the app reads `DATABASE_URL` from the repository-root `.env`. Leave it unset to continue using the local SQLite database.
 

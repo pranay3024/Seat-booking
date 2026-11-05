@@ -13,7 +13,7 @@
   </div>
   <div class="head-actions event-branding">
     <img class="event-brand-logo" src="{{ url_for('static', filename='swaramancha-logo.png') }}" alt="Swaramancha">
-    <a class="btn btn-ghost" href="{{ url_for('bookings') }}">Bookings</a>
+    {% if IS_AUTHENTICATED %}<a class="btn btn-ghost" href="{{ url_for('bookings') }}">Bookings</a>{% endif %}
   </div>
 </div>
 
@@ -54,7 +54,11 @@
                   {%- for n in block -%}
                     {%- set lab = r.row ~ n -%}
                     {%- if lab in booked -%}
-                      <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ booked[lab].customer_name }} · {{ booked[lab].phone }}" aria-label="Seat {{ lab }}, booked by {{ booked[lab].customer_name }}, phone {{ booked[lab].phone }}">{{ n }}</a>
+                      {%- if IS_ADMIN -%}
+                        <a class="seat booked" data-seat="{{ lab }}" href="{{ url_for('booking_detail', code=booked[lab].code) }}" title="{{ booked[lab].customer_name }} · {{ booked[lab].phone }}" aria-label="Seat {{ lab }}, booked by {{ booked[lab].customer_name }}, phone {{ booked[lab].phone }}">{{ n }}</a>
+                      {%- else -%}
+                        <span class="seat booked" data-seat="{{ lab }}" title="Booked seat {{ lab }}" aria-label="Seat {{ lab }}, booked">{{ n }}</span>
+                      {%- endif -%}
                     {%- elif IS_ADMIN -%}
                       <button type="button" class="seat{{ ' balc' if sec.key == 'balcony' }}" data-seat="{{ lab }}" data-sec="{{ sec.key }}" data-block="{{ block_index }}" title="{{ lab }}">{{ n }}</button>
                     {%- else -%}
@@ -110,7 +114,7 @@
   {% else %}
   <aside class="card panel" id="panel">
     <h2>View-only access</h2>
-    <p class="muted">You can see seat availability and booking details. Booking changes are disabled.</p>
+    <p class="muted">You can see seat availability. Booking details and changes are unavailable.</p>
   </aside>
   {% endif %}
 </div>
