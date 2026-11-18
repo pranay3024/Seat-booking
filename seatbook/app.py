@@ -472,7 +472,7 @@ def bookings():
     )
     pending_names = db.query(
         """SELECT customer_name, phone, num_seats FROM bookings
-           WHERE show_id = ? AND hard_copy_delivered = FALSE
+           WHERE show_id = ? AND hard_copy_delivered = FALSE AND status != 'cancelled'
            ORDER BY LOWER(customer_name), created_at""",
         (show["id"],),
     )
