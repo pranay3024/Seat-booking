@@ -10,7 +10,7 @@ The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Bal
 - Choose **1–50 seats**; clicking an available seat starts a selection that continues in that seat block and down the rows, without crossing aisles
 - Click selected seats to remove them, then click other available seats to choose replacements
 - Book with customer details (name, phone, email, city, notes) — no prices or payments
-- Track hard-copy pass delivery for each booking from the bookings list
+- Track hard-copy pass delivery and show attendance for each booking from the bookings list
 - Double-booking is impossible (database-level lock on each seat)
 - Booked seats do not reveal customer details to public visitors; admins can hover and click to open a booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)

@@ -60,7 +60,8 @@ SCHEMA = [
         status TEXT NOT NULL DEFAULT 'confirmed',
         created_at TEXT NOT NULL,
         cancelled_at TEXT,
-        hard_copy_delivered BOOLEAN NOT NULL DEFAULT FALSE
+        hard_copy_delivered BOOLEAN NOT NULL DEFAULT FALSE,
+        attended BOOLEAN NOT NULL DEFAULT FALSE
     )""",
     """CREATE TABLE IF NOT EXISTS admins (
         username TEXT PRIMARY KEY,
@@ -93,6 +94,10 @@ def _ensure_schema(conn):
                 """ALTER TABLE bookings
                    ADD COLUMN IF NOT EXISTS hard_copy_delivered BOOLEAN NOT NULL DEFAULT FALSE"""
             )
+            cur.execute(
+                """ALTER TABLE bookings
+                   ADD COLUMN IF NOT EXISTS attended BOOLEAN NOT NULL DEFAULT FALSE"""
+            )
         else:
             cur.execute("PRAGMA table_info(bookings)")
             columns = {row[1] for row in cur.fetchall()}
@@ -100,6 +105,11 @@ def _ensure_schema(conn):
                 cur.execute(
                     """ALTER TABLE bookings
                        ADD COLUMN hard_copy_delivered BOOLEAN NOT NULL DEFAULT FALSE"""
+                )
+            if "attended" not in columns:
+                cur.execute(
+                    """ALTER TABLE bookings
+                       ADD COLUMN attended BOOLEAN NOT NULL DEFAULT FALSE"""
                 )
         conn.commit()
     except Exception:

@@ -34,7 +34,7 @@
 <div class="card table-card">
   <table class="table">
     <thead>
-      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Hard copy delivered</th><th>Booked</th></tr>
+      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Hard copy delivered</th><th>Attended</th><th>Booked</th></tr>
     </thead>
     <tbody>
       {% for r in rows %}
@@ -54,6 +54,20 @@
           {% else %}
           <span class="delivery-status {{ 'delivery-status-yes' if r.hard_copy_delivered else 'delivery-status-no' }}">
             {{ 'Yes' if r.hard_copy_delivered else 'No' }}
+          </span>
+          {% endif %}
+        </td>
+        <td>
+          {% if IS_ADMIN and not r.attended %}
+          <form method="post" action="{{ url_for('booking_mark_attended', code=r.code) }}"
+                onclick="event.stopPropagation()"
+                onsubmit="return confirm('Confirm that booking {{ r.code }} attended the show?');">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="attendance-button" type="submit" aria-label="Mark booking {{ r.code }} as attended">No</button>
+          </form>
+          {% else %}
+          <span class="delivery-status {{ 'delivery-status-yes' if r.attended else 'delivery-status-no' }}">
+            {{ 'Yes' if r.attended else 'No' }}
           </span>
           {% endif %}
         </td>

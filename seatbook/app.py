@@ -499,11 +499,12 @@ def bookings_csv():
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["Booking code", "Status", "Show", "Show date", "Show time", "Customer", "Phone", "Email",
-                "City", "Seats", "No. of seats", "Hard copy delivered", "Notes", "Booked at (IST)"])
+                "City", "Seats", "No. of seats", "Hard copy delivered", "Attended", "Notes", "Booked at (IST)"])
     for r in rows:
         w.writerow([r["code"], r["status"], r["show_title"], r["show_date"], r["show_time"], r["customer_name"],
                     r["phone"], r["email"], r["city"], r["seats"].replace(",", " "), r["num_seats"],
-                    "Yes" if r["hard_copy_delivered"] else "No", r["notes"], ist(r["created_at"])])
+                    "Yes" if r["hard_copy_delivered"] else "No", "Yes" if r["attended"] else "No",
+                    r["notes"], ist(r["created_at"])])
     return Response(
         "﻿" + buf.getvalue(),
         mimetype="text/csv",
@@ -526,6 +527,18 @@ def booking_mark_hard_copy_delivered(code):
         db.execute("UPDATE bookings SET hard_copy_delivered = TRUE WHERE id = ?", (b["id"],))
         db.commit()
         flash(f"Hard copy marked delivered for booking {b['code']}.", "ok")
+    return redirect(url_for("bookings"))
+
+
+@app.route("/bookings/<code>/attended", methods=["POST"])
+@login_required
+@admin_required
+def booking_mark_attended(code):
+    b = get_booking_or_404(code)
+    if not b["attended"]:
+        db.execute("UPDATE bookings SET attended = TRUE WHERE id = ?", (b["id"],))
+        db.commit()
+        flash(f"Booking {b['code']} marked as attended.", "ok")
     return redirect(url_for("bookings"))
 
 
