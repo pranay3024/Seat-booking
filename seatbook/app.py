@@ -455,7 +455,7 @@ def _filtered_bookings(args):
         sql += " AND b.hard_copy_delivered = TRUE"
     elif hard_copy_status == "undelivered":
         sql += " AND b.hard_copy_delivered = FALSE"
-    sql += " ORDER BY b.created_at DESC LIMIT 1000"
+    sql += " ORDER BY b.attended DESC, b.created_at DESC LIMIT 1000"
     return db.query(sql, params)
 
 
