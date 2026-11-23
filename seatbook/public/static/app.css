@@ -319,6 +319,38 @@ button.seat.balc:hover { background: var(--balc-soft); }
 .delivery-status { display: inline-block; min-width: 48px; padding: 4px 10px; border-radius: 99px; text-align: center; font-size: 14px; font-weight: 800; }
 .delivery-status-yes { background: var(--stall-soft); color: var(--stall); }
 .delivery-status-no { background: #f1efea; color: var(--muted); }
+.seat-attendance-list { display: flex; flex-wrap: wrap; gap: 6px; max-width: 520px; }
+.seat-attendance-form { margin: 0; }
+.seat-attendance-button,
+.seat-attendance-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+.seat-attendance-button { cursor: pointer; }
+.seat-attendance-button span,
+.seat-attendance-readonly span { color: var(--muted); font-size: 11px; }
+.seat-attendance-button:hover { border-color: var(--accent); }
+.seat-attendance-button.seat-attendance-yes,
+.seat-attendance-readonly.seat-attendance-yes {
+  border-color: #acd7c2;
+  background: var(--stall-soft);
+  color: var(--stall);
+}
+.seat-attendance-button.seat-attendance-yes span,
+.seat-attendance-readonly.seat-attendance-yes span { color: var(--stall); }
+.attendance-card { padding: 16px 20px; margin-top: 16px; }
+.attendance-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.attendance-card-head p { margin: 2px 0 0; }
 
 /* ---------- ticket ---------- */
 .ticket { display: grid; grid-template-columns: 1fr 130px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; position: relative; }

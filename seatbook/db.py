@@ -74,6 +74,14 @@ SCHEMA = [
         booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
         PRIMARY KEY (show_id, seat)
     )""",
+    """CREATE TABLE IF NOT EXISTS seat_attendance (
+        show_id INTEGER NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+        seat TEXT NOT NULL,
+        booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        attended BOOLEAN NOT NULL DEFAULT FALSE,
+        marked_at TEXT,
+        PRIMARY KEY (show_id, seat)
+    )""",
     "CREATE INDEX IF NOT EXISTS idx_bookings_show ON bookings(show_id)",
     "CREATE INDEX IF NOT EXISTS idx_bookings_created ON bookings(created_at)",
 ]

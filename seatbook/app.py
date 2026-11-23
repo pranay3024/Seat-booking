@@ -195,6 +195,27 @@ def clear_stale_seat_locks(show_id, seats):
             )
 
 
+def seat_attendance_map(show_id, booking_id, seats):
+    rows = db.query(
+        """SELECT seat, attended FROM seat_attendance
+           WHERE show_id = ? AND booking_id = ?""",
+        (show_id, booking_id),
+    )
+    marked = {row["seat"]: bool(row["attended"]) for row in rows}
+    return {seat: marked.get(seat, False) for seat in parse_seats(seats)}
+
+
+def sync_booking_attendance(show_id, booking_id, seats):
+    attendance = seat_attendance_map(show_id, booking_id, seats)
+    attended_count = sum(attendance.values())
+    is_all_attended = attended_count == len(attendance) and len(attendance) > 0
+    db.execute(
+        "UPDATE bookings SET attended = ? WHERE id = ?",
+        (is_all_attended, booking_id),
+    )
+    return attendance, attended_count
+
+
 # ---------------------------------------------------------------- template filters
 @app.template_filter("ist")
 def ist(ts):
@@ -456,7 +477,25 @@ def _filtered_bookings(args):
     elif hard_copy_status == "undelivered":
         sql += " AND b.hard_copy_delivered = FALSE"
     sql += " ORDER BY b.attended DESC, b.created_at DESC LIMIT 1000"
-    return db.query(sql, params)
+    rows = db.query(sql, params)
+    show = get_single_show()
+    attendance_rows = db.query(
+        "SELECT booking_id, seat, attended FROM seat_attendance WHERE show_id = ?",
+        (show["id"],),
+    )
+    attendance_by_booking = {}
+    for row in attendance_rows:
+        attendance_by_booking.setdefault(row["booking_id"], {})[row["seat"]] = bool(row["attended"])
+
+    for row in rows:
+        seats = parse_seats(row["seats"])
+        marked = attendance_by_booking.get(row["id"], {})
+        if row["attended"] and not marked:
+            marked = {seat: True for seat in seats}
+        attendance = {seat: marked.get(seat, False) for seat in seats}
+        row["seat_attendance"] = attendance
+        row["attended_count"] = sum(attendance.values())
+    return rows
 
 
 @app.route("/bookings")
@@ -499,12 +538,18 @@ def bookings_csv():
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["Booking code", "Status", "Show", "Show date", "Show time", "Customer", "Phone", "Email",
-                "City", "Seats", "No. of seats", "Hard copy delivered", "Attended", "Notes", "Booked at (IST)"])
+                "City", "Seats", "No. of seats", "Hard copy delivered", "Attended", "Seat attendance",
+                "Notes", "Booked at (IST)"])
     for r in rows:
+        seat_attendance = "|".join(
+            f'{seat}:{"Yes" if attended else "No"}'
+            for seat, attended in r["seat_attendance"].items()
+        )
         w.writerow([r["code"], r["status"], r["show_title"], r["show_date"], r["show_time"], r["customer_name"],
                     r["phone"], r["email"], r["city"], r["seats"].replace(",", " "), r["num_seats"],
-                    "Yes" if r["hard_copy_delivered"] else "No", "Yes" if r["attended"] else "No",
-                    r["notes"], ist(r["created_at"])])
+                    "Yes" if r["hard_copy_delivered"] else "No",
+                    "Yes" if r["attended"] else "Partial" if r["attended_count"] else "No",
+                    seat_attendance, r["notes"], ist(r["created_at"])])
     return Response(
         "﻿" + buf.getvalue(),
         mimetype="text/csv",
@@ -515,7 +560,15 @@ def bookings_csv():
 @app.route("/bookings/<code>")
 @login_required
 def booking_detail(code):
-    return render_template("booking_detail.html", b=get_booking_or_404(code))
+    b = get_booking_or_404(code)
+    attendance = seat_attendance_map(b["show_id"], b["id"], b["seats"])
+    attended_count = sum(attendance.values())
+    return render_template(
+        "booking_detail.html",
+        b=b,
+        seat_attendance=attendance,
+        attended_count=attended_count,
+    )
 
 
 @app.route("/bookings/<code>/hard-copy-delivered", methods=["POST"])
@@ -535,11 +588,75 @@ def booking_mark_hard_copy_delivered(code):
 @admin_required
 def booking_mark_attended(code):
     b = get_booking_or_404(code)
-    if not b["attended"]:
-        db.execute("UPDATE bookings SET attended = TRUE WHERE id = ?", (b["id"],))
-        db.commit()
-        flash(f"Booking {b['code']} marked as attended.", "ok")
+    seats = parse_seats(b["seats"])
+    if b["status"] != "confirmed":
+        flash("Cancelled bookings cannot be marked as attended.", "error")
+        return redirect(url_for("bookings"))
+    for seat in seats:
+        existing = db.query(
+            "SELECT 1 FROM seat_attendance WHERE show_id = ? AND seat = ?",
+            (b["show_id"], seat),
+            one=True,
+        )
+        if existing:
+            db.execute(
+                """UPDATE seat_attendance SET attended = TRUE, marked_at = ?
+                   WHERE show_id = ? AND seat = ? AND booking_id = ?""",
+                (now_utc(), b["show_id"], seat, b["id"]),
+            )
+        else:
+            db.execute(
+                """INSERT INTO seat_attendance (show_id, seat, booking_id, attended, marked_at)
+                   VALUES (?, ?, ?, TRUE, ?)""",
+                (b["show_id"], seat, b["id"], now_utc()),
+            )
+    db.execute("UPDATE bookings SET attended = TRUE WHERE id = ?", (b["id"],))
+    db.commit()
+    flash(f"All {len(seats)} seat(s) for booking {b['code']} marked as attended.", "ok")
     return redirect(url_for("bookings"))
+
+
+@app.route("/bookings/<code>/seats/<seat>/attendance", methods=["POST"])
+@login_required
+@admin_required
+def booking_toggle_seat_attendance(code, seat):
+    b = get_booking_or_404(code)
+    seat = seat.upper()
+    if b["status"] != "confirmed":
+        flash("Cancelled bookings cannot be marked as attended.", "error")
+        return redirect(url_for("booking_detail", code=b["code"]))
+    if seat not in parse_seats(b["seats"]):
+        abort(404)
+
+    desired = request.form.get("attended") == "true"
+    existing = db.query(
+        "SELECT 1 FROM seat_attendance WHERE show_id = ? AND seat = ? AND booking_id = ?",
+        (b["show_id"], seat, b["id"]),
+        one=True,
+    )
+    if existing:
+        db.execute(
+            """UPDATE seat_attendance SET attended = ?, marked_at = ?
+               WHERE show_id = ? AND seat = ? AND booking_id = ?""",
+            (desired, now_utc(), b["show_id"], seat, b["id"]),
+        )
+    else:
+        db.execute(
+            """INSERT INTO seat_attendance (show_id, seat, booking_id, attended, marked_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (b["show_id"], seat, b["id"], desired, now_utc()),
+        )
+    attendance, attended_count = sync_booking_attendance(b["show_id"], b["id"], b["seats"])
+    db.commit()
+    flash(
+        f"Seat {seat} marked as {'attended' if desired else 'not attended'} "
+        f"({attended_count}/{len(attendance)} in this booking).",
+        "ok",
+    )
+    redirect_url = request.form.get("next", "")
+    if redirect_url.startswith("/") and not redirect_url.startswith("//"):
+        return redirect(redirect_url)
+    return redirect(url_for("booking_detail", code=b["code"]))
 
 
 @app.route("/bookings/<code>/edit", methods=["POST"])
@@ -570,6 +687,7 @@ def booking_cancel(code):
     b = get_booking_or_404(code)
     if b["status"] != "cancelled":
         db.execute("DELETE FROM booked_seats WHERE booking_id = ?", (b["id"],))
+        db.execute("DELETE FROM seat_attendance WHERE booking_id = ?", (b["id"],))
         db.execute("UPDATE bookings SET status='cancelled', cancelled_at=? WHERE id=?", (now_utc(), b["id"]))
         db.commit()
         flash(f"Booking {b['code']} cancelled. {b['num_seats']} seat(s) released.", "ok")

@@ -34,7 +34,7 @@
 <div class="card table-card">
   <table class="table">
     <thead>
-      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Hard copy delivered</th><th>Attended</th><th>Booked</th></tr>
+      <tr><th>Code</th><th>Customer</th><th>Seats</th><th>Status</th><th>Hard copy delivered</th><th>Seat attendance</th><th>Booked</th></tr>
     </thead>
     <tbody>
       {% for r in rows %}
@@ -58,17 +58,32 @@
           {% endif %}
         </td>
         <td>
-          {% if IS_ADMIN and not r.attended %}
-          <form method="post" action="{{ url_for('booking_mark_attended', code=r.code) }}"
-                onclick="event.stopPropagation()"
-                onsubmit="return confirm('Confirm that booking {{ r.code }} attended the show?');">
-            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <button class="attendance-button" type="submit" aria-label="Mark booking {{ r.code }} as attended">No</button>
-          </form>
+          {% if r.status == 'confirmed' and r.seat_attendance %}
+          <div class="seat-attendance-list" onclick="event.stopPropagation()">
+            {% for seat, attended in r.seat_attendance.items() %}
+            {% if IS_ADMIN %}
+            <form class="seat-attendance-form" method="post"
+                  action="{{ url_for('booking_toggle_seat_attendance', code=r.code, seat=seat) }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="attended" value="{{ 'false' if attended else 'true' }}">
+              <input type="hidden" name="next" value="{{ url_for('bookings') }}">
+              <button class="seat-attendance-button {{ 'seat-attendance-yes' if attended else '' }}"
+                      type="submit"
+                      aria-label="Mark seat {{ seat }} {{ 'not attended' if attended else 'attended' }}">
+                {{ seat }} <span>{{ 'Yes' if attended else 'No' }}</span>
+              </button>
+            </form>
+            {% else %}
+            <span class="seat-attendance-readonly {{ 'seat-attendance-yes' if attended else '' }}">
+              {{ seat }} <span>{{ 'Yes' if attended else 'No' }}</span>
+            </span>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% elif r.status == 'cancelled' %}
+          <span class="delivery-status delivery-status-no">Cancelled</span>
           {% else %}
-          <span class="delivery-status {{ 'delivery-status-yes' if r.attended else 'delivery-status-no' }}">
-            {{ 'Yes' if r.attended else 'No' }}
-          </span>
+          <span class="delivery-status delivery-status-no">No seats</span>
           {% endif %}
         </td>
         <td class="small muted">{{ r.created_at|ist }}</td>

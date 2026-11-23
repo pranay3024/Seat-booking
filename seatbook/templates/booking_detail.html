@@ -53,6 +53,44 @@
     </div>
   </article>
 
+  {% if b.status == 'confirmed' %}
+  <section class="card attendance-card no-print">
+    <div class="attendance-card-head">
+      <div>
+        <b>Seat attendance</b>
+        <p class="muted small">{{ attended_count }} of {{ b.num_seats }} seat(s) marked attended</p>
+      </div>
+      {% if IS_ADMIN %}
+      <form method="post" action="{{ url_for('booking_mark_attended', code=b.code) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="btn btn-ghost btn-sm" type="submit">Mark all attended</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="seat-attendance-list">
+      {% for seat, attended in seat_attendance.items() %}
+        {% if IS_ADMIN %}
+        <form class="seat-attendance-form" method="post"
+              action="{{ url_for('booking_toggle_seat_attendance', code=b.code, seat=seat) }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <input type="hidden" name="attended" value="{{ 'false' if attended else 'true' }}">
+          <input type="hidden" name="next" value="{{ url_for('booking_detail', code=b.code) }}">
+          <button class="seat-attendance-button {{ 'seat-attendance-yes' if attended else '' }}"
+                  type="submit"
+                  aria-label="Mark seat {{ seat }} {{ 'not attended' if attended else 'attended' }}">
+            {{ seat }} <span>{{ 'Attended' if attended else 'Not attended' }}</span>
+          </button>
+        </form>
+        {% else %}
+        <span class="seat-attendance-readonly {{ 'seat-attendance-yes' if attended else '' }}">
+          {{ seat }} <span>{{ 'Attended' if attended else 'Not attended' }}</span>
+        </span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
   {% if IS_ADMIN and b.status == 'confirmed' %}
   <details class="card edit-card no-print">
     <summary>Edit customer details</summary>
