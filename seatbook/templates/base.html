@@ -44,12 +44,126 @@
     {% block content %}{% endblock %}
   </main>
 
+  <dialog class="attendance-confirm-dialog" id="attendanceConfirmDialog">
+    <form method="dialog" id="attendanceConfirmForm">
+      <h2>Confirm attendance</h2>
+      <p id="attendanceConfirmMessage">Mark this seat as attended?</p>
+      <div class="attendance-confirm-actions">
+        <button class="btn btn-ghost" value="cancel" type="submit">Cancel</button>
+        <button class="btn btn-primary" value="confirm" type="submit">Mark attended</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
     // auto-hide toasts
     document.querySelectorAll('.toast').forEach(function (t, i) {
       setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 400); }, 4500 + i * 600);
       t.addEventListener('click', function () { t.remove(); });
     });
+
+    (function () {
+      var dialog = document.getElementById('attendanceConfirmDialog');
+      var confirmForm = document.getElementById('attendanceConfirmForm');
+      var confirmMessage = document.getElementById('attendanceConfirmMessage');
+      var pendingForm = null;
+
+      function showToast(message) {
+        var toast = document.createElement('div');
+        toast.className = 'toast toast-ok';
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        document.getElementById('toasts').appendChild(toast);
+        setTimeout(function () { toast.classList.add('out'); setTimeout(function () { toast.remove(); }, 400); }, 4500);
+        toast.addEventListener('click', function () { toast.remove(); });
+      }
+
+      function updateDetailCount(attendedCount, totalSeats) {
+        var count = document.querySelector('.attendance-card-head .muted');
+        if (count) {
+          count.textContent = attendedCount + ' of ' + totalSeats + ' seat(s) marked attended';
+        }
+      }
+
+      function updateSeatButton(form, attended) {
+        var button = form.querySelector('.seat-attendance-button');
+        var hidden = form.querySelector('input[name="attended"]');
+        if (!button) return;
+        button.classList.toggle('seat-attendance-yes', attended);
+        hidden.value = attended ? 'false' : 'true';
+        var seat = button.textContent.trim().split(/\s+/)[0];
+        var status = button.querySelector('span');
+        if (status) {
+          status.textContent = document.querySelector('.attendance-card') ? (attended ? 'Attended' : 'Not attended') : (attended ? 'Yes' : 'No');
+        }
+        button.setAttribute('aria-label', 'Mark seat ' + seat + ' ' + (attended ? 'not attended' : 'attended'));
+      }
+
+      function submitAttendanceForm(form) {
+        fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new FormData(form)
+        }).then(function (response) {
+          if (!response.ok) throw new Error('Could not update attendance');
+          return response.json();
+        }).then(function (data) {
+          if (!data.ok) throw new Error(data.message || 'Could not update attendance');
+          if (data.seat) {
+            updateSeatButton(form, data.attended);
+            updateDetailCount(data.attended_count, data.total_seats);
+          } else if (form.hasAttribute('data-mark-all-attended')) {
+            document.querySelectorAll('[data-seat-attendance-form]').forEach(function (seatForm) {
+              updateSeatButton(seatForm, true);
+            });
+            updateDetailCount(data.attended_count, data.total_seats);
+          }
+          showToast(data.message);
+        }).catch(function (error) {
+          showToast(error.message);
+        });
+      }
+
+      document.querySelectorAll('[data-seat-attendance-form], [data-mark-all-attended]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          var hidden = form.querySelector('input[name="attended"]');
+          var markingAttended = form.hasAttribute('data-mark-all-attended') || (hidden && hidden.value === 'true');
+          if (markingAttended && dialog && typeof dialog.showModal === 'function') {
+            pendingForm = form;
+            if (form.hasAttribute('data-mark-all-attended')) {
+              confirmMessage.textContent = 'Mark all seats in this booking as attended?';
+            } else {
+              var button = form.querySelector('button');
+              var seat = button ? button.textContent.trim().split(/\s+/)[0] : 'This seat';
+              confirmMessage.textContent = 'Mark seat ' + seat + ' as attended?';
+            }
+            dialog.showModal();
+          } else {
+            submitAttendanceForm(form);
+          }
+        });
+      });
+
+      if (confirmForm) {
+        confirmForm.addEventListener('submit', function (event) {
+          event.preventDefault();
+          var returnValue = event.submitter ? event.submitter.value : 'cancel';
+          dialog.close(returnValue);
+        });
+      }
+
+      if (dialog) {
+        dialog.addEventListener('close', function () {
+          if (dialog.returnValue === 'confirm' && pendingForm) {
+            submitAttendanceForm(pendingForm);
+          }
+          pendingForm = null;
+        });
+      }
+    })();
   </script>
   {% block scripts %}{% endblock %}
 </body>

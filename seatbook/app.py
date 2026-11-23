@@ -13,7 +13,7 @@ from functools import wraps
 from pathlib import Path
 
 from flask import (
-    Flask, Response, abort, flash, redirect, render_template, request, session, url_for,
+    Flask, Response, abort, flash, jsonify, redirect, render_template, request, session, url_for,
 )
 from dotenv import load_dotenv
 
@@ -612,7 +612,16 @@ def booking_mark_attended(code):
             )
     db.execute("UPDATE bookings SET attended = TRUE WHERE id = ?", (b["id"],))
     db.commit()
-    flash(f"All {len(seats)} seat(s) for booking {b['code']} marked as attended.", "ok")
+    message = f"All {len(seats)} seat(s) for booking {b['code']} marked as attended."
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({
+            "ok": True,
+            "attended": True,
+            "attended_count": len(seats),
+            "total_seats": len(seats),
+            "message": message,
+        })
+    flash(message, "ok")
     return redirect(url_for("bookings"))
 
 
@@ -648,11 +657,20 @@ def booking_toggle_seat_attendance(code, seat):
         )
     attendance, attended_count = sync_booking_attendance(b["show_id"], b["id"], b["seats"])
     db.commit()
-    flash(
+    message = (
         f"Seat {seat} marked as {'attended' if desired else 'not attended'} "
-        f"({attended_count}/{len(attendance)} in this booking).",
-        "ok",
+        f"({attended_count}/{len(attendance)} in this booking)."
     )
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({
+            "ok": True,
+            "seat": seat,
+            "attended": desired,
+            "attended_count": attended_count,
+            "total_seats": len(attendance),
+            "message": message,
+        })
+    flash(message, "ok")
     redirect_url = request.form.get("next", "")
     if redirect_url.startswith("/") and not redirect_url.startswith("//"):
         return redirect(redirect_url)

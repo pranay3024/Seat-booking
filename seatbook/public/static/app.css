@@ -351,6 +351,18 @@ button.seat.balc:hover { background: var(--balc-soft); }
 .attendance-card { padding: 16px 20px; margin-top: 16px; }
 .attendance-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .attendance-card-head p { margin: 2px 0 0; }
+.attendance-confirm-dialog {
+  width: min(420px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(24, 22, 31, .28);
+  color: var(--ink);
+}
+.attendance-confirm-dialog::backdrop { background: rgba(24, 22, 31, .48); }
+.attendance-confirm-dialog h2 { margin-bottom: 6px; }
+.attendance-confirm-dialog p { margin: 0 0 18px; color: var(--ink-2); }
+.attendance-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ---------- ticket ---------- */
 .ticket { display: grid; grid-template-columns: 1fr 130px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; position: relative; }

@@ -63,7 +63,8 @@
             {% for seat, attended in r.seat_attendance.items() %}
             {% if IS_ADMIN %}
             <form class="seat-attendance-form" method="post"
-                  action="{{ url_for('booking_toggle_seat_attendance', code=r.code, seat=seat) }}">
+                  action="{{ url_for('booking_toggle_seat_attendance', code=r.code, seat=seat) }}"
+                  data-seat-attendance-form>
               <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
               <input type="hidden" name="attended" value="{{ 'false' if attended else 'true' }}">
               <input type="hidden" name="next" value="{{ url_for('bookings') }}">
