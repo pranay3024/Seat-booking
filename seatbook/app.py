@@ -528,11 +528,12 @@ def bookings():
             for row in pending_names
         ],
         pass_not_attended_names=[
-            f'{row["customer_name"]} - {row["phone"]} - {row["num_seats"]} seat(s)'
+            f'{row["customer_name"]} - {row["phone"]} - '
+            f'{row["num_seats"] - row["attended_count"]} seat(s) not attended'
             for row in rows
             if row["status"] == "confirmed"
             and row["hard_copy_delivered"]
-            and row["attended_count"] == 0
+            and row["attended_count"] < row["num_seats"]
         ],
     )
 
