@@ -10,6 +10,7 @@
 {% if IS_ADMIN %}
 <div class="head-actions">
   <button class="btn btn-ghost" type="button" data-copy-attended-count>Copy attended total</button>
+  <button class="btn btn-ghost" type="button" data-copy-names="pass_not_attended">Pass holders not attended</button>
   <button class="btn btn-ghost" type="button" data-copy-names="delivered">Delivered names</button>
   <button class="btn btn-ghost" type="button" data-copy-names="pending">Undelivered names</button>
 </div>
@@ -111,7 +112,8 @@
   (function () {
     var names = {
       delivered: {{ delivered_names|tojson }},
-      pending: {{ pending_names|tojson }}
+      pending: {{ pending_names|tojson }},
+      pass_not_attended: {{ pass_not_attended_names|tojson }}
     };
     var feedback = document.getElementById('copyFeedback');
     var fallback = document.getElementById('copyFallback');
