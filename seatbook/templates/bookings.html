@@ -9,6 +9,7 @@
   </div>
 {% if IS_ADMIN %}
 <div class="head-actions">
+  <button class="btn btn-ghost" type="button" data-copy-attended-count>Copy attended total</button>
   <button class="btn btn-ghost" type="button" data-copy-names="delivered">Delivered names</button>
   <button class="btn btn-ghost" type="button" data-copy-names="pending">Undelivered names</button>
 </div>
@@ -120,7 +121,20 @@
       fallback.value = text;
       fallback.focus();
       fallback.select();
-      feedback.textContent = 'Clipboard access is unavailable. The names are selected below; copy them manually.';
+      feedback.textContent = 'Clipboard access is unavailable. The content is selected below; copy it manually.';
+    }
+
+    function copyText(text, successMessage) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () {
+          fallback.hidden = true;
+          feedback.textContent = successMessage;
+        }).catch(function () {
+          showManualCopy(text);
+        });
+      } else {
+        showManualCopy(text);
+      }
     }
 
     document.querySelectorAll('[data-copy-names]').forEach(function (button) {
@@ -132,17 +146,13 @@
         }
 
         var text = list.join('\n');
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text).then(function () {
-            fallback.hidden = true;
-            feedback.textContent = list.length + ' name(s) copied to clipboard.';
-          }).catch(function () {
-            showManualCopy(text);
-          });
-        } else {
-          showManualCopy(text);
-        }
+        copyText(text, list.length + ' name(s) copied to clipboard.');
       });
+    });
+
+    document.querySelector('[data-copy-attended-count]').addEventListener('click', function () {
+      var total = document.querySelectorAll('.seat-attendance-button.seat-attendance-yes').length;
+      copyText(String(total), total + ' attended seat(s) copied to clipboard.');
     });
   })();
 </script>

@@ -50,7 +50,7 @@
       <p id="attendanceConfirmMessage">Mark this seat as attended?</p>
       <div class="attendance-confirm-actions">
         <button class="btn btn-ghost" value="cancel" type="submit">Cancel</button>
-        <button class="btn btn-primary" value="confirm" type="submit">Mark attended</button>
+        <button class="btn btn-primary" value="confirm" type="submit" autofocus>Mark attended</button>
       </div>
     </form>
   </dialog>
@@ -141,6 +141,7 @@
               confirmMessage.textContent = 'Mark seat ' + seat + ' as attended?';
             }
             dialog.showModal();
+            confirmForm.querySelector('[value="confirm"]').focus();
           } else {
             submitAttendanceForm(form);
           }

@@ -14,7 +14,7 @@ The layout is taken from your floor plan: **Stalls A–R (743 seats)** and **Bal
 - Double-booking is impossible (database-level lock on each seat)
 - Booked seats do not reveal customer details to public visitors; admins can hover and click to open a booking
 - Printable ticket page, edit customer details, cancel booking (releases seats)
-- Bookings list with search, filter by status, **CSV export** (opens in Excel)
+- Bookings list with search and filtering, CSV export for booking details, and one-click copying of the attended-seat total
 - Works on phone and desktop
 
 ---
